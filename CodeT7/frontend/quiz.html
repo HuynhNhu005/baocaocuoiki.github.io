@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link rel="stylesheet" href="style.css" />
+    <script>
+      let questions = [];
+      let current = 0;
+      let answers = [];
+
+      async function loadQuiz() {
+        const res = await fetch("http://127.0.0.1:8000/get-quiz/");
+        questions = await res.json();
+        showQuestion();
+      }
+
+      function showQuestion() {
+        document.getElementById("question").innerHTML =
+          questions[current].question;
+        document.getElementById("optA").innerText = questions[current].option_a;
+        document.getElementById("optB").innerText = questions[current].option_b;
+        document.getElementById("optC").innerText = questions[current].option_c;
+        document.getElementById("optD").innerText = questions[current].option_d;
+      }
+
+      function choose(ans) {
+        answers.push(ans);
+        current++;
+        if (current < questions.length) showQuestion();
+        else
+          localStorage.setItem("answers", JSON.stringify(answers)),
+            (window.location = "result.html");
+      }
+    </script>
+  </head>
+
+  <body onload="loadQuiz()">
+    <div class="container">
+      <h3 id="question">Loading...</h3>
+      <button onclick="choose('A')" id="optA"></button>
+      <button onclick="choose('B')" id="optB"></button>
+      <button onclick="choose('C')" id="optC"></button>
+      <button onclick="choose('D')" id="optD"></button>
+    </div>
+  </body>
+</html>

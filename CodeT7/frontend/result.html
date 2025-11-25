@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="container">
+      <h2>Kết quả</h2>
+      <p id="score"></p>
+      <button onclick="window.location='index.html'">Thi lại</button>
+    </div>
+
+    <script>
+      let score = JSON.parse(localStorage.getItem("answers")).length;
+      document.getElementById("score").innerHTML =
+        "Điểm của bạn: " + score + "/5";
+    </script>
+  </body>
+</html>
