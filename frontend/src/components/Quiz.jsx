@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { fetchRandomQuestions, submitAnswers } from "../api";
+import { fetchRandomQuestions } from "../api"; // Bỏ submitAnswers vì ta sẽ fetch trực tiếp
 import Timer from "./Timer";
 import Result from "./Result";
 
@@ -36,13 +36,47 @@ export default function Quiz({ config, onRetry }) {
     setAnswers((prev) => ({ ...prev, [qid]: idx }));
   }
 
+  // --- HÀM NỘP BÀI ĐÃ CẬP NHẬT (FIX LỖI) ---
   async function handleSubmit() {
+    // 1. Kiểm tra nếu chưa làm câu nào
     if (Object.keys(answers).length === 0 && !confirm("Bạn chưa trả lời câu nào. Chắc chắn nộp?")) return;
+    
+    // 2. Lấy Token từ LocalStorage
+    const token = localStorage.getItem("access_token");
+    if (!token) {
+        alert("Bạn chưa đăng nhập! Vui lòng đăng nhập lại.");
+        window.location.href = "/login.html";
+        return;
+    }
+
     try {
-      const res = await submitAnswers(answers);
+      // 3. Gọi API trực tiếp để kèm Token vào Header
+      const response = await fetch("http://127.0.0.1:8000/api/submit", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}` // <--- QUAN TRỌNG: Gửi Token để Server nhận diện
+        },
+        body: JSON.stringify({ answers: answers })
+      });
+
+      // 4. Xử lý các trường hợp lỗi
+      if (!response.ok) {
+          if (response.status === 401) {
+              alert("Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại!");
+              window.location.href = "/login.html";
+              return;
+          }
+          throw new Error("Lỗi từ server: " + response.statusText);
+      }
+
+      // 5. Hiển thị kết quả
+      const res = await response.json();
       setResult(res);
+
     } catch (error) {
-      alert("Lỗi khi nộp bài!");
+      console.error("Lỗi nộp bài:", error);
+      alert("Không thể nộp bài! Chi tiết: " + error.message);
     }
   }
 

@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Quiz Platform</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: #111; /* Màu nền tối */
+            color: #fff;
+        }
+
+        /* Hiệu ứng viền Neon xoay */
+        .box {
+            position: relative;
+            width: 380px;
+            height: 420px;
+            background: #1c1c1c;
+            border-radius: 8px;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .box::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 380px;
+            height: 420px;
+            background: linear-gradient(0deg, transparent, transparent, #45f3ff, #45f3ff, #45f3ff);
+            z-index: 1;
+            transform-origin: bottom right;
+            animation: animate 6s linear infinite;
+        }
+
+        .box::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 380px;
+            height: 420px;
+            background: linear-gradient(0deg, transparent, transparent, #ff2770, #ff2770, #ff2770);
+            z-index: 1;
+            transform-origin: bottom right;
+            animation: animate 6s linear infinite;
+            animation-delay: -3s; /* Chạy lệch pha để tạo màu đối lập */
+        }
+
+        @keyframes animate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Lớp phủ đè lên viền để tạo khoảng trống ở giữa */
+        .form-container {
+            position: absolute;
+            inset: 4px; /* Độ dày viền */
+            background: #222;
+            padding: 50px 40px;
+            border-radius: 8px;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+        }
+
+        h2 {
+            color: #fff;
+            font-weight: 500;
+            text-align: center;
+            letter-spacing: 0.1em;
+            margin-bottom: 30px;
+        }
+
+        /* Input styling */
+        .inputBox {
+            position: relative;
+            width: 100%;
+            margin-top: 35px;
+        }
+
+        .inputBox input {
+            position: relative;
+            width: 100%;
+            padding: 20px 10px 10px;
+            background: transparent;
+            outline: none;
+            border: none;
+            box-shadow: none;
+            color: #23242a;
+            font-size: 1em;
+            letter-spacing: 0.05em;
+            transition: 0.5s;
+            z-index: 10;
+        }
+
+        .inputBox span {
+            position: absolute;
+            left: 0;
+            padding: 20px 0px 10px;
+            pointer-events: none;
+            color: #8f8f8f;
+            font-size: 1em;
+            letter-spacing: 0.05em;
+            transition: 0.5s;
+        }
+
+        /* Hiệu ứng khi focus vào input */
+        .inputBox input:valid ~ span,
+        .inputBox input:focus ~ span {
+            color: #fff;
+            font-size: 0.75em;
+            transform: translateY(-34px);
+        }
+
+        .inputBox i {
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            width: 100%;
+            height: 2px;
+            background: #fff;
+            border-radius: 4px;
+            overflow: hidden;
+            transition: 0.5s;
+            pointer-events: none;
+        }
+
+        .inputBox input:valid ~ i,
+        .inputBox input:focus ~ i {
+            height: 44px; /* Tô nền input khi nhập */
+        }
+
+        /* Button styling */
+        .links {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .links a {
+            margin: 10px 0;
+            font-size: 0.75em;
+            color: #8f8f8f;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .links a:hover,
+        .links a:nth-child(2) {
+            color: #fff;
+        }
+
+        input[type="submit"], button.submit-btn {
+            border: none;
+            outline: none;
+            background: linear-gradient(45deg, #ff357a, #fff172);
+            padding: 11px 25px;
+            width: 100%;
+            margin-top: 10px;
+            border-radius: 4px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+
+        input[type="submit"]:active, button.submit-btn:active {
+            opacity: 0.8;
+        }
+
+        /* Ẩn hiện form */
+        .hidden {
+            display: none;
+        }
+        
+        #error-msg {
+            color: #ff357a;
+            font-size: 0.8em;
+            text-align: center;
+            margin-top: 10px;
+            min-height: 1.2em;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="box">
+        <div class="form-container" id="login-form">
+            <h2>Sign In</h2>
+            <div class="inputBox">
+                <input type="text" id="login-user" required="required">
+                <span>Username</span>
+                <i></i>
+            </div>
+            <div class="inputBox">
+                <input type="password" id="login-pass" required="required">
+                <span>Password</span>
+                <i></i>
+            </div>
+            <div class="links">
+                <a onclick="alert('Chức năng này cần Server gửi Email (Chưa làm)')">Forgot Password</a>
+                <a onclick="toggleForm()">Signup</a>
+            </div>
+            <div id="error-msg"></div>
+            <button class="submit-btn" onclick="handleLogin()">Login</button>
+        </div>
+
+        <div class="form-container hidden" id="register-form">
+            <h2>Sign Up</h2>
+            <div class="inputBox">
+                <input type="text" id="reg-user" required="required">
+                <span>Username</span>
+                <i></i>
+            </div>
+            <div class="inputBox">
+                <input type="text" id="reg-fullname" required="required">
+                <span>Full Name</span>
+                <i></i>
+            </div>
+            <div class="inputBox">
+                <input type="password" id="reg-pass" required="required">
+                <span>Password</span>
+                <i></i>
+            </div>
+            <div class="links">
+                <a onclick="toggleForm()">Back to Sign In</a>
+            </div>
+            <button class="submit-btn" style="background: linear-gradient(45deg, #45f3ff, #fff);" onclick="handleRegister()">Register</button>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = "http://localhost:8000/api"; // URL Backend của bạn
+
+        // Hàm chuyển đổi giữa Đăng nhập và Đăng ký
+        function toggleForm() {
+            const loginForm = document.getElementById('login-form');
+            const regForm = document.getElementById('register-form');
+            const box = document.querySelector('.box');
+
+            if (loginForm.classList.contains('hidden')) {
+                loginForm.classList.remove('hidden');
+                regForm.classList.add('hidden');
+                // Đổi màu viền về mặc định
+                document.querySelector('.box').style.height = "420px";
+            } else {
+                loginForm.classList.add('hidden');
+                regForm.classList.remove('hidden');
+                // Tăng chiều cao box chút xíu vì form đăng ký dài hơn
+                document.querySelector('.box').style.height = "480px";
+            }
+        }
+
+        // Xử lý ĐĂNG NHẬP
+        async function handleLogin() {
+            const username = document.getElementById('login-user').value;
+            const password = document.getElementById('login-pass').value;
+            const errorDiv = document.getElementById('error-msg');
+
+            if(!username || !password) {
+                errorDiv.innerText = "Vui lòng nhập đầy đủ thông tin!";
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    // Lưu Token vào LocalStorage
+                    localStorage.setItem('access_token', data.access_token);
+                    localStorage.setItem('username', username); // Lưu thêm tên để hiển thị
+                    
+                    alert("Đăng nhập thành công!");
+                    // Chuyển hướng về trang chủ (index.html)
+                    window.location.href = "/"; 
+                } else {
+                    errorDiv.innerText = "Sai tên đăng nhập hoặc mật khẩu!";
+                }
+            } catch (error) {
+                console.error(error);
+                errorDiv.innerText = "Lỗi kết nối Server!";
+            }
+        }
+
+        // Xử lý ĐĂNG KÝ
+        async function handleRegister() {
+            const username = document.getElementById('reg-user').value;
+            const fullname = document.getElementById('reg-fullname').value;
+            const password = document.getElementById('reg-pass').value;
+
+            if(!username || !password) {
+                alert("Vui lòng nhập đầy đủ thông tin!");
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        username: username, 
+                        password: password,
+                        full_name: fullname 
+                    })
+                });
+
+                if (response.ok) {
+                    alert("Đăng ký thành công! Hãy đăng nhập ngay.");
+                    toggleForm(); // Quay về màn hình login
+                } else {
+                    const data = await response.json();
+                    alert("Lỗi: " + (data.detail || "Đăng ký thất bại"));
+                }
+            } catch (error) {
+                alert("Lỗi kết nối Server!");
+            }
+        }
+    </script>
+</body>
+</html>

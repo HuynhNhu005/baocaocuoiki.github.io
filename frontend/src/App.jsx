@@ -1,22 +1,56 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Quiz from "./components/Quiz";
-import "./index.css"; // Đảm bảo bạn đã cập nhật file CSS như hướng dẫn trước
+import "./index.css";
 
 export default function App() {
   const [gameStarted, setGameStarted] = useState(false);
+  // Thêm state để lưu thông tin user (nếu cần hiển thị tên)
+  const [username, setUsername] = useState("");
+
   const [config, setConfig] = useState({
     limit: 10,
     category: "",
     difficulty: ""
   });
 
+  // 1. KIỂM TRA ĐĂNG NHẬP (QUAN TRỌNG)
+  useEffect(() => {
+    const token = localStorage.getItem("access_token");
+    const storedUser = localStorage.getItem("username");
+    
+    if (!token) {
+      // Nếu không có token -> Đá về trang đăng nhập
+      alert("Bạn cần đăng nhập để tiếp tục!");
+      window.location.href = "/login.html";
+    } else {
+      if (storedUser) setUsername(storedUser);
+    }
+  }, []);
+
   const handleStart = (e) => {
     e.preventDefault();
     setGameStarted(true);
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("username");
+    window.location.href = "/login.html";
+  };
+
   return (
     <div className="app-container">
+      {/* Header nhỏ hiển thị người dùng */}
+      <div style={{ position: "absolute", top: "10px", right: "20px", color: "#fff" }}>
+        {username && <span>Xin chào, <b>{username}</b> | </span>}
+        <button 
+          onClick={handleLogout}
+          style={{ background: "transparent", border: "none", color: "#ff4757", cursor: "pointer", textDecoration: "underline" }}
+        >
+          Đăng xuất
+        </button>
+      </div>
+
       {!gameStarted ? (
         <div className="card">
           <h1>🎓 Nền Tảng Thi Trắc Nghiệm</h1>
@@ -46,8 +80,8 @@ export default function App() {
                 <option value="">Tất cả chủ đề</option>
                 <option value="IT">Công nghệ thông tin</option>
                 <option value="Math">Toán học</option>
-                <option value="General">Kiến thức chung</option>
-                {/* Bạn có thể thêm các category khác tùy theo dữ liệu trong DB */}
+                <option value="Science">Khoa học</option>
+                <option value="Geography">Địa lý</option>
               </select>
             </div>
 
