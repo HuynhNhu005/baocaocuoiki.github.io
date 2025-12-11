@@ -5,15 +5,13 @@ import Result from "./Result";
 
 export default function Quiz({ config, onRetry }) {
   const [questions, setQuestions] = useState([]);
-  const [answers, setAnswers] = useState({}); // { qid: choice_index }
+  const [answers, setAnswers] = useState({});
   const [loading, setLoading] = useState(true);
   const [result, setResult] = useState(null);
-  
-  // Thời gian làm bài: 1 phút cho mỗi câu hỏi
-  const TIME_LIMIT = config.limit * 60; 
-
-  // Quản lý câu hỏi hiện tại để hiển thị từng câu (thay vì list dài)
   const [currentIndex, setCurrentIndex] = useState(0);
+
+  // 1 phút cho mỗi câu hỏi
+  const TIME_LIMIT = config.limit * 60;
 
   useEffect(() => {
     load();
@@ -22,14 +20,13 @@ export default function Quiz({ config, onRetry }) {
   async function load() {
     setLoading(true);
     try {
-      // Gọi API với tham số config từ người dùng chọn
       const qs = await fetchRandomQuestions(config.limit, config.category, config.difficulty);
       setQuestions(qs);
       setAnswers({});
       setResult(null);
       setCurrentIndex(0);
     } catch (error) {
-      console.error("Lỗi tải câu hỏi:", error);
+      console.error(error);
     } finally {
       setLoading(false);
     }
@@ -40,6 +37,7 @@ export default function Quiz({ config, onRetry }) {
   }
 
   async function handleSubmit() {
+    if (Object.keys(answers).length === 0 && !confirm("Bạn chưa trả lời câu nào. Chắc chắn nộp?")) return;
     try {
       const res = await submitAnswers(answers);
       setResult(res);
@@ -48,37 +46,46 @@ export default function Quiz({ config, onRetry }) {
     }
   }
 
-  // Tính phần trăm hoàn thành
-  const progressPercent = Math.round(((currentIndex + 1) / questions.length) * 100);
-  const currentQ = questions[currentIndex];
+  if (loading) return (
+    <div className="card" style={{textAlign: "center"}}>
+      <h2>⏳ Đang tải dữ liệu...</h2>
+      <p>Vui lòng chờ trong giây lát</p>
+    </div>
+  );
 
-  if (loading) return <div className="card"><h2>⏳ Đang tải đề thi...</h2></div>;
-  if (questions.length === 0) return <div className="card"><h2>❌ Không tìm thấy câu hỏi phù hợp!</h2><button className="btn secondary-btn" onClick={onRetry}>Quay lại cài đặt</button></div>;
+  if (questions.length === 0) return (
+    <div className="card" style={{textAlign: "center"}}>
+      <h2>❌ Không tìm thấy câu hỏi!</h2>
+      <p>Vui lòng chọn chủ đề hoặc độ khó khác.</p>
+      <button className="btn secondary-btn" onClick={onRetry}>Quay lại</button>
+    </div>
+  );
+
   if (result) return <Result result={result} onRetake={onRetry} />;
+
+  const currentQ = questions[currentIndex];
+  const progressPercent = Math.round(((currentIndex + 1) / questions.length) * 100);
 
   return (
     <div className="card">
-      {/* Header: Timer & Info */}
       <div className="quiz-header">
         <div>
-          <span style={{ fontWeight: 'bold', color: '#6b7280' }}>
-            Câu {currentIndex + 1} / {questions.length}
-          </span>
+          <small style={{ color: "#6b7280", textTransform: "uppercase", fontWeight: "bold" }}>Câu hỏi</small>
+          <div style={{ fontSize: "1.5rem", fontWeight: "bold", color: "#4f46e5" }}>
+            {currentIndex + 1}<span style={{fontSize: "1rem", color: "#9ca3af"}}>/{questions.length}</span>
+          </div>
         </div>
         <Timer seconds={TIME_LIMIT} onTimeUp={handleSubmit} />
       </div>
 
-      {/* Progress Bar */}
       <div className="progress-container">
         <div className="progress-fill" style={{ width: `${progressPercent}%` }}></div>
       </div>
 
-      {/* Question Content */}
       <div className="question-text">
         {currentQ.title}
       </div>
 
-      {/* Options */}
       <div className="options-grid">
         {currentQ.choices.map((choice, idx) => (
           <div
@@ -86,35 +93,40 @@ export default function Quiz({ config, onRetry }) {
             className={`option-item ${answers[currentQ.id] === idx ? 'selected' : ''}`}
             onClick={() => onSelect(currentQ.id, idx)}
           >
-            <span style={{fontWeight: 'bold', marginRight: '10px'}}>{String.fromCharCode(65 + idx)}.</span> 
+            <div style={{
+              width: "30px", height: "30px", borderRadius: "50%", 
+              background: answers[currentQ.id] === idx ? "#4f46e5" : "#f3f4f6",
+              color: answers[currentQ.id] === idx ? "white" : "#6b7280",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              marginRight: "15px", fontWeight: "bold", flexShrink: 0
+            }}>
+              {String.fromCharCode(65 + idx)}
+            </div>
             {choice}
           </div>
         ))}
       </div>
 
-      {/* Navigation Buttons */}
-      <div style={{ marginTop: '2rem', display: 'flex', gap: '1rem', justifyContent: 'space-between' }}>
+      <div style={{ marginTop: '2rem', display: 'flex', gap: '1rem' }}>
         <button 
           className="btn secondary-btn" 
           onClick={() => setCurrentIndex(prev => Math.max(0, prev - 1))}
           disabled={currentIndex === 0}
-          style={{ width: '48%' }}
         >
-          ⬅ Câu trước
+          ⬅ Quay lại
         </button>
         
         {currentIndex < questions.length - 1 ? (
           <button 
             className="btn primary-btn" 
             onClick={() => setCurrentIndex(prev => prev + 1)}
-            style={{ width: '48%' }}
           >
-            Câu sau ➡
+            Tiếp theo ➡
           </button>
         ) : (
           <button 
             className="btn primary-btn" 
-            style={{ backgroundColor: '#10b981', width: '48%' }} 
+            style={{background: "#10b981"}}
             onClick={handleSubmit}
           >
             Nộp Bài ✅
