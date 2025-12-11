@@ -1,0 +1,77 @@
+import React, { useState } from "react";
+import Quiz from "./components/Quiz";
+import "./index.css"; // Đảm bảo bạn đã cập nhật file CSS như hướng dẫn trước
+
+export default function App() {
+  const [gameStarted, setGameStarted] = useState(false);
+  const [config, setConfig] = useState({
+    limit: 10,
+    category: "",
+    difficulty: ""
+  });
+
+  const handleStart = (e) => {
+    e.preventDefault();
+    setGameStarted(true);
+  };
+
+  return (
+    <div className="app-container">
+      {!gameStarted ? (
+        <div className="card">
+          <h1>🎓 Nền Tảng Thi Trắc Nghiệm</h1>
+          <p style={{ textAlign: "center", color: "#6b7280", marginBottom: "2rem" }}>
+            Chào mừng bạn! Hãy thiết lập bài thi của mình.
+          </p>
+
+          <form onSubmit={handleStart}>
+            <div className="form-group">
+              <label>Số lượng câu hỏi:</label>
+              <select
+                value={config.limit}
+                onChange={(e) => setConfig({ ...config, limit: Number(e.target.value) })}
+              >
+                <option value={5}>5 câu (Nhanh)</option>
+                <option value={10}>10 câu (Tiêu chuẩn)</option>
+                <option value={20}>20 câu (Thử thách)</option>
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label>Chủ đề (Category):</label>
+              <select
+                value={config.category}
+                onChange={(e) => setConfig({ ...config, category: e.target.value })}
+              >
+                <option value="">Tất cả chủ đề</option>
+                <option value="IT">Công nghệ thông tin</option>
+                <option value="Math">Toán học</option>
+                <option value="General">Kiến thức chung</option>
+                {/* Bạn có thể thêm các category khác tùy theo dữ liệu trong DB */}
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label>Độ khó:</label>
+              <select
+                value={config.difficulty}
+                onChange={(e) => setConfig({ ...config, difficulty: e.target.value })}
+              >
+                <option value="">Ngẫu nhiên</option>
+                <option value="easy">Dễ</option>
+                <option value="medium">Trung bình</option>
+                <option value="hard">Khó</option>
+              </select>
+            </div>
+
+            <button type="submit" className="btn primary-btn">
+              Bắt Đầu Làm Bài 🚀
+            </button>
+          </form>
+        </div>
+      ) : (
+        <Quiz config={config} onRetry={() => setGameStarted(false)} />
+      )}
+    </div>
+  );
+}
