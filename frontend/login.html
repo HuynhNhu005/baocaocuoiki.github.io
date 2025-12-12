@@ -269,39 +269,40 @@
 
         // Xử lý ĐĂNG NHẬP
         async function handleLogin() {
-            const username = document.getElementById('login-user').value;
-            const password = document.getElementById('login-pass').value;
-            const errorDiv = document.getElementById('error-msg');
+        const username = document.getElementById('login-user').value;
+        const password = document.getElementById('login-pass').value;
+        const errorDiv = document.getElementById('error-msg');
 
-            if(!username || !password) {
-                errorDiv.innerText = "Vui lòng nhập đầy đủ thông tin!";
-                return;
-            }
-
-            try {
-                const response = await fetch(`${API_URL}/login`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, password })
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    // Lưu Token vào LocalStorage
-                    localStorage.setItem('access_token', data.access_token);
-                    localStorage.setItem('username', username); // Lưu thêm tên để hiển thị
-                    
-                    alert("Đăng nhập thành công!");
-                    // Chuyển hướng về trang chủ (index.html)
-                    window.location.href = "/"; 
-                } else {
-                    errorDiv.innerText = "Sai tên đăng nhập hoặc mật khẩu!";
-                }
-            } catch (error) {
-                console.error(error);
-                errorDiv.innerText = "Lỗi kết nối Server!";
-            }
+        if(!username || !password) {
+            errorDiv.innerText = "Vui lòng nhập đầy đủ thông tin!";
+            return;
         }
+
+        try {
+            const response = await fetch(`${API_URL}/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                
+                // --- CẬP NHẬT MỚI: LƯU ROLE VÀO LOCALSTORAGE ---
+                localStorage.setItem('access_token', data.access_token);
+                localStorage.setItem('username', data.username);
+                localStorage.setItem('role', data.role); // <--- QUAN TRỌNG: Lưu quyền hạn
+                
+                alert(`Đăng nhập thành công! Xin chào ${data.role === 'admin' ? 'Quản trị viên' : 'Bạn'} ${data.username}`);
+                window.location.href = "/"; 
+            } else {
+                errorDiv.innerText = "Sai tên đăng nhập hoặc mật khẩu!";
+            }
+        } catch (error) {
+            console.error(error);
+            errorDiv.innerText = "Lỗi kết nối Server!";
+        }
+    }
 
         // Xử lý ĐĂNG KÝ
         async function handleRegister() {

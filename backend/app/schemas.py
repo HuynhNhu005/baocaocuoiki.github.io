@@ -39,6 +39,8 @@ class UserLogin(BaseModel):
 class Token(BaseModel):
     access_token: str
     token_type: str
+    role: str      # <--- Thêm dòng này
+    username: str  # <--- Thêm dòng này để tiện hiển thị
 
 class UserOut(UserBase):
     id: int
