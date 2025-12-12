@@ -10,6 +10,7 @@ export default function App() {
   const [role, setRole] = useState("student");
   const [showAdmin, setShowAdmin] = useState(false); // <--- 2. STATE MỚI ĐỂ BẬT ADMIN
   const [viewMode, setViewMode] = useState('config');
+  const [email, setEmail] = useState("");
   
 
   const [config, setConfig] = useState({
@@ -23,6 +24,7 @@ export default function App() {
     const token = localStorage.getItem("access_token");
     const storedUser = localStorage.getItem("username");
     const storedRole = localStorage.getItem("role");
+    const storedEmail = localStorage.getItem("email");
     
     if (!token) {
       alert("Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại!");
@@ -30,6 +32,7 @@ export default function App() {
     } else {
       if (storedUser) setUsername(storedUser);
       if (storedRole) setRole(storedRole);
+      if (storedEmail) setEmail(storedEmail); // Set email
     }
   }, []);
 
@@ -71,9 +74,14 @@ export default function App() {
         backdropFilter: 'blur(5px)' // Hiệu ứng mờ nền
       }}>
         {username && (
-          <span style={{ textShadow: "0 1px 3px rgba(0,0,0,0.5)" }}>
-            Xin chào, <b>{username}</b> <small>({role})</small>
-          </span>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: '1.2' }}>
+            <span style={{ textShadow: "0 1px 3px rgba(0,0,0,0.1)" }}>
+              Xin chào, <b>{username}</b> <small>({role})</small>
+            </span>
+            {/* Hiển thị Email nhỏ bên dưới tên */}
+            <span style={{ fontSize: '0.75rem', color: '#4b5563' }}>{email}</span>
+          </div>
+          
         )}
         
         {/* NÚT ADMIN: Chỉ hiện nếu role là 'admin' */}

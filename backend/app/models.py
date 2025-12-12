@@ -3,10 +3,13 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from .database import Base
 
+
 class User(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String(50), unique=True, index=True, nullable=False)
+    email = Column(String, unique=True, index=True)     # <--- THÊM MỚI
+    phone_number = Column(String, nullable=True)        # <--- THÊM MỚI
     password_hash = Column(String(200), nullable=False)
     full_name = Column(String(100), nullable=True)
     role = Column(String(20), default="student") # student / admin

@@ -31,6 +31,8 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     password: str
     full_name: Optional[str] = None
+    email: str          # <--- Mới: Bắt buộc nhập email
+    phone_number: str   # <--- Mới: Bắt buộc nhập sđt
 
 class UserLogin(BaseModel):
     username: str
@@ -41,11 +43,15 @@ class Token(BaseModel):
     token_type: str
     role: str      # <--- Thêm dòng này
     username: str  # <--- Thêm dòng này để tiện hiển thị
+    email: Optional[str] = None        # <--- Mới: Trả về email khi login
+    phone_number: Optional[str] = None # <--- Mới: Trả về sđt khi login
 
 class UserOut(UserBase):
     id: int
     full_name: Optional[str] = None
     role: str
+    email: Optional[str] = None        # <--- Mới: Hiển thị email
+    phone_number: Optional[str] = None # <--- Mới: Hiển thị sđt
     class Config:
         from_attributes = True
 

@@ -234,6 +234,17 @@
                 <i></i>
             </div>
             <div class="inputBox">
+        <input type="email" id="reg-email" required>
+        <span>Email (Gmail)</span>
+        <i></i>
+    </div>
+
+    <div class="inputBox">
+        <input type="tel" id="reg-phone" required>
+        <span>Phone Number</span>
+        <i></i>
+    </div>
+            <div class="inputBox">
                 <input type="password" id="reg-pass" required="required">
                 <span>Password</span>
                 <i></i>
@@ -263,7 +274,7 @@
                 loginForm.classList.add('hidden');
                 regForm.classList.remove('hidden');
                 // Tăng chiều cao box chút xíu vì form đăng ký dài hơn
-                document.querySelector('.box').style.height = "480px";
+                document.querySelector('.box').style.height = "750px";
             }
         }
 
@@ -292,6 +303,9 @@
                 localStorage.setItem('access_token', data.access_token);
                 localStorage.setItem('username', data.username);
                 localStorage.setItem('role', data.role); // <--- QUAN TRỌNG: Lưu quyền hạn
+                // LƯU THÊM THÔNG TIN MỚI
+            localStorage.setItem('email', data.email || ""); 
+            localStorage.setItem('phone', data.phone_number || "");
                 
                 alert(`Đăng nhập thành công! Xin chào ${data.role === 'admin' ? 'Quản trị viên' : 'Bạn'} ${data.username}`);
                 window.location.href = "/"; 
@@ -308,6 +322,8 @@
         async function handleRegister() {
             const username = document.getElementById('reg-user').value;
             const fullname = document.getElementById('reg-fullname').value;
+            const email = document.getElementById('reg-email').value;       // <--- Lấy giá trị
+        const phone = document.getElementById('reg-phone').value;       // <--- Lấy giá trị
             const password = document.getElementById('reg-pass').value;
 
             if(!username || !password) {
@@ -322,7 +338,9 @@
                     body: JSON.stringify({ 
                         username: username, 
                         password: password,
-                        full_name: fullname 
+                        full_name: fullname,
+                        email: email,           // <--- Gửi lên server
+                    phone_number: phone     // <--- Gửi lên server 
                     })
                 });
 

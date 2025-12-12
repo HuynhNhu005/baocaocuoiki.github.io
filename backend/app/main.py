@@ -37,9 +37,14 @@ async def register(user: schemas.UserCreate, db: AsyncSession = Depends(get_db))
     res = await db.execute(select(models.User).where(models.User.username == user.username))
     if res.scalars().first():
         raise HTTPException(status_code=400, detail="Username already registered")
+    # Kiểm tra email trùng (Quan trọng)
+    res_email = await db.execute(select(models.User).where(models.User.email == user.email))
+    if res_email.scalars().first():
+        raise HTTPException(status_code=400, detail="Email already registered")
     
     hashed_pw = auth.get_password_hash(user.password)
-    new_user = models.User(username=user.username, password_hash=hashed_pw, full_name=user.full_name)
+    
+    new_user = models.User(username=user.username, password_hash=hashed_pw, full_name=user.full_name,email=user.email, phone_number=user.phone_number)
     db.add(new_user)
     await db.commit()
     await db.refresh(new_user)
@@ -63,7 +68,9 @@ async def login(form_data: schemas.UserLogin, db: AsyncSession = Depends(get_db)
         "access_token": access_token, 
         "token_type": "bearer",
         "role": user.role,       
-        "username": user.username 
+        "username": user.username,
+        "email": user.email,               # <--- Trả về
+        "phone_number": user.phone_number  # <--- Trả về
     }
 
 # =======================================================
