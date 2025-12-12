@@ -166,3 +166,24 @@ async def admin_get_users(db: AsyncSession = Depends(get_db), current_user: mode
 async def admin_get_user_history(user_id: int, db: AsyncSession = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
     if current_user.role != "admin": raise HTTPException(status_code=403, detail="Không có quyền truy cập")
     return await crud.get_user_history(db, user_id)
+
+# 3.7 Xóa người dùng
+@app.delete(settings.API_PREFIX + "/admin/users/{user_id}")
+async def admin_delete_user(user_id: int, db: AsyncSession = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
+    if current_user.role != "admin": raise HTTPException(status_code=403, detail="Không có quyền")
+    
+    # Không cho xóa chính mình
+    if user_id == current_user.id: raise HTTPException(status_code=400, detail="Không thể xóa tài khoản của chính mình")
+    
+    success = await crud.delete_user(db, user_id)
+    if not success: raise HTTPException(status_code=404, detail="User not found")
+    return {"status": "deleted"}
+
+# 3.8 Cập nhật thông tin/role người dùng
+@app.put(settings.API_PREFIX + "/admin/users/{user_id}")
+async def admin_update_user(user_id: int, new_data: schemas.UserOut, db: AsyncSession = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
+    if current_user.role != "admin": raise HTTPException(status_code=403, detail="Không có quyền")
+
+    updated_user = await crud.update_user_role(db, user_id, new_data.role, new_data.full_name)
+    if not updated_user: raise HTTPException(status_code=404, detail="User not found")
+    return updated_user

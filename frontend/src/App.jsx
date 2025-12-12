@@ -47,9 +47,21 @@ export default function App() {
 
   return (
     <div className="app-container">
-      {/* HEADER: Hiển thị thông tin User & Nút Admin */}
-      <div style={{ position: "absolute", top: "15px", right: "20px", color: "#fff", zIndex: 100, display: "flex", alignItems: "center", gap: "15px" }}>
-        
+      {/* HEADER: HIỂN THỊ THÔNG TIN USER (Được đẩy lên Z-INDEX cao nhất) */}
+      <div style={{ 
+        position: "fixed", // Đổi từ 'absolute' sang 'fixed'
+        top: "15px", 
+        right: "20px", 
+        color: "#1e293b", // Đổi màu chữ sang tối để nhìn rõ trên nền trắng
+        zIndex: 1000,     // Tăng Z-index lên mức cao nhất
+        display: "flex", 
+        alignItems: "center", 
+        gap: "15px",
+        background: 'rgba(255,255,255,0.7)', // Thêm nền mờ để chữ không bị nhòe
+        padding: '5px 10px',
+        borderRadius: '8px',
+        backdropFilter: 'blur(5px)' // Hiệu ứng mờ nền
+      }}>
         {username && (
           <span style={{ textShadow: "0 1px 3px rgba(0,0,0,0.5)" }}>
             Xin chào, <b>{username}</b> <small>({role})</small>

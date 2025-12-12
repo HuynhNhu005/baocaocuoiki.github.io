@@ -88,3 +88,23 @@ async def get_stats(db: AsyncSession):
     total_questions = (await db.execute(select(func.count()).select_from(models.Question))).scalar()
     total_exams = (await db.execute(select(func.count()).select_from(models.ExamResult))).scalar()
     return {"users": total_users, "questions": total_questions, "exams": total_exams}
+
+
+async def delete_user(db: AsyncSession, user_id: int):
+    # Cần đảm bảo không xóa tài khoản Admin cuối cùng!
+    user = await db.get(models.User, user_id)
+    if user:
+        await db.delete(user)
+        await db.commit()
+        return True
+    return False
+
+async def update_user_role(db: AsyncSession, user_id: int, new_role: str, new_fullname: str):
+    user = await db.get(models.User, user_id)
+    if user:
+        user.role = new_role
+        user.full_name = new_fullname
+        await db.commit()
+        await db.refresh(user)
+        return user
+    return None
