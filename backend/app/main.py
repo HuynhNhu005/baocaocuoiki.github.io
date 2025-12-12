@@ -117,6 +117,11 @@ async def submit_answers(
     
     return result_data
 
+# API Lấy bảng xếp hạng (Top 10)
+@app.get(settings.API_PREFIX + "/leaderboard")
+async def get_leaderboard_route(db: AsyncSession = Depends(get_db)):
+    return await crud.get_leaderboard(db)
+
 # API Xem lịch sử thi của chính mình
 @app.get(settings.API_PREFIX + "/history", response_model=list[schemas.ExamResultOut])
 async def get_my_history(db: AsyncSession = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):

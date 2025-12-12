@@ -108,3 +108,31 @@ async def update_user_role(db: AsyncSession, user_id: int, new_role: str, new_fu
         await db.refresh(user)
         return user
     return None
+# 7. Lấy bảng xếp hạng (Top 10 điểm cao nhất)
+async def get_leaderboard(db: AsyncSession, limit: int = 10):
+    
+    # BƯỚC 1: Tìm điểm cao nhất (max_score) cho mỗi user
+    max_scores_subquery = select(
+        models.ExamResult.user_id,
+        func.max(models.ExamResult.score).label("max_score")
+    ).group_by(models.ExamResult.user_id).subquery()
+    
+    # BƯỚC 2: Join với bảng User để lấy tên và sắp xếp
+    stmt = select(
+        models.User.username,
+        models.User.full_name,
+        max_scores_subquery.c.max_score
+    ).join(max_scores_subquery, models.User.id == max_scores_subquery.c.user_id).order_by(max_scores_subquery.c.max_score.desc()).limit(limit)
+
+    result = await db.execute(stmt)
+    
+    # BƯỚC 3: Xử lý kết quả trả về dưới dạng list of dicts (dict là tốt nhất cho Frontend)
+    leaderboard_data = []
+    for username, full_name, max_score in result.all():
+        leaderboard_data.append({
+            "username": username,
+            "full_name": full_name,
+            "max_score": max_score
+        })
+        
+    return leaderboard_data

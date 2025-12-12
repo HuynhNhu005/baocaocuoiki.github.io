@@ -2,12 +2,15 @@ import React, { useState, useEffect } from "react";
 import Quiz from "./components/Quiz";
 import AdminDashboard from "./components/AdminDashboard"; // <--- 1. IMPORT QUAN TRỌNG
 import "./index.css";
+import StudentDashboard from "./components/StudentDashboard";
 
 export default function App() {
   const [gameStarted, setGameStarted] = useState(false);
   const [username, setUsername] = useState("");
   const [role, setRole] = useState("student");
   const [showAdmin, setShowAdmin] = useState(false); // <--- 2. STATE MỚI ĐỂ BẬT ADMIN
+  const [viewMode, setViewMode] = useState('config');
+  
 
   const [config, setConfig] = useState({
     limit: 10,
@@ -33,6 +36,11 @@ export default function App() {
   const handleStart = (e) => {
     e.preventDefault();
     setGameStarted(true);
+    setViewMode('quiz');
+  };
+  const onQuizRetry = () => {
+    setGameStarted(false);
+    setViewMode('config'); // Quay lại Student Dashboard (tab cấu hình)
   };
 
   const handleLogout = () => {
@@ -99,71 +107,26 @@ export default function App() {
         </button>
       </div>
 
-      {/* PHẦN NỘI DUNG CHÍNH (LOGIC HIỂN THỊ) */}
-      
       {/* Trường hợp 1: Đang mở trang Admin */}
       {showAdmin ? (
         <AdminDashboard onBack={() => setShowAdmin(false)} />
       ) : 
-      /* Trường hợp 2: Chưa bắt đầu game -> Hiện Form chọn đề */
-      !gameStarted ? (
-        <div className="card">
-          <h1 style={{ background: "-webkit-linear-gradient(45deg, #6366f1, #a855f7)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-            🎓 Nền Tảng Thi Trắc Nghiệm
-          </h1>
-          <p style={{ textAlign: "center", color: "#6b7280", marginBottom: "2rem" }}>
-            Chào mừng bạn! Hãy thiết lập bài thi của mình.
-          </p>
-
-          <form onSubmit={handleStart}>
-            <div className="form-group">
-              <label>Số lượng câu hỏi:</label>
-              <select
-                value={config.limit}
-                onChange={(e) => setConfig({ ...config, limit: Number(e.target.value) })}
-              >
-                <option value={5}>5 câu (Nhanh)</option>
-                <option value={10}>10 câu (Tiêu chuẩn)</option>
-                <option value={20}>20 câu (Thử thách)</option>
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label>Chủ đề (Category):</label>
-              <select
-                value={config.category}
-                onChange={(e) => setConfig({ ...config, category: e.target.value })}
-              >
-                <option value="">Tất cả chủ đề</option>
-                <option value="IT">Công nghệ thông tin</option>
-                <option value="Math">Toán học</option>
-                <option value="Science">Khoa học</option>
-                <option value="Geography">Địa lý</option>
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label>Độ khó:</label>
-              <select
-                value={config.difficulty}
-                onChange={(e) => setConfig({ ...config, difficulty: e.target.value })}
-              >
-                <option value="">Ngẫu nhiên</option>
-                <option value="easy">Dễ</option>
-                <option value="medium">Trung bình</option>
-                <option value="hard">Khó</option>
-              </select>
-            </div>
-
-            <button type="submit" className="btn primary-btn" style={{ marginTop: "10px" }}>
-              Bắt Đầu Làm Bài 🚀
-            </button>
-          </form>
-        </div>
+      /* Trường hợp 2: Đang làm bài thi */
+      gameStarted ? (
+        // Sử dụng hàm onQuizRetry mới (đã được định nghĩa trong App.jsx)
+        <Quiz config={config} onRetry={onQuizRetry} /> 
       ) : (
-        /* Trường hợp 3: Đang chơi -> Hiện Quiz */
-        <Quiz config={config} onRetry={() => setGameStarted(false)} />
+        /* Trường hợp 3: Student Dashboard (Hiển thị các Tab Cấu hình, Lịch sử, Leaderboard) */
+        // Chuyển toàn bộ form cũ vào component StudentDashboard
+        <StudentDashboard 
+            viewMode={viewMode} 
+            setViewMode={setViewMode} 
+            config={config} 
+            setConfig={setConfig} 
+            handleStart={handleStart} 
+        />
       )}
+      {/* KHÔNG CÓ DIV.CARD VÀ FORM CẤU HÌNH CŨ Ở ĐÂY NỮA */}
     </div>
   );
 }

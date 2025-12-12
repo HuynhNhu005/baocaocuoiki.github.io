@@ -216,20 +216,24 @@ const handleSaveUser = async (e) => {
 
         {/* TAB: USERS */}
         {activeTab === "users" && (
-  <div className="table-card">
+  <div className="stats-grid">
     <table className="modern-table">
       <thead><tr><th>ID</th><th>Tài khoản</th><th>Họ tên</th><th>Vai trò</th><th>Hành động</th></tr></thead>
       <tbody>
         {users.map(u => (
           <tr key={u.id}>
             <td>#{u.id}</td>
-            <td style={{ fontWeight: "bold" }}>{u.username}</td>
+            <td style={{fontWeight:"bold"}}>{u.username}</td>
             <td>{u.full_name}</td>
             <td><span className={`badge ${u.role}`}>{u.role}</span></td>
             <td>
-              <button className="action-btn edit" onClick={() => setEditingUser(u)} title="Sửa">✏️</button>
-              <button className="action-btn delete" onClick={() => handleDeleteUser(u.id, u.username)} title="Xóa">🗑️</button>
-              <button className="btn-add" style={{padding:"5px 10px", fontSize:"0.8rem", marginLeft: "10px"}} onClick={() => fetchUserHistory(u.id)}>👁️ Lịch sử</button>
+              <div className="action-container"> {/* <--- DÙNG CLASS NÀY ĐỂ CĂN HÀNG NGANG */}
+                <button className="action-btn edit" onClick={() => setEditingUser(u)} title="Sửa">✏️</button>
+                <button className="action-btn delete" onClick={() => handleDeleteUser(u.id, u.username)} title="Xóa">🗑️</button>
+                <button className="btn-history" onClick={() => fetchUserHistory(u.id)}>
+                    👁️ Xem Lịch sử {/* <--- DÙNG CLASS VÀ TEXT MỚI */}
+                </button>
+              </div>
             </td>
           </tr>
         ))}
