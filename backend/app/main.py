@@ -199,3 +199,67 @@ async def admin_update_user(user_id: int, new_data: schemas.UserOut, db: AsyncSe
     updated_user = await crud.update_user_role(db, user_id, new_data.role, new_data.full_name)
     if not updated_user: raise HTTPException(status_code=404, detail="User not found")
     return updated_user
+
+# =======================================================
+# 4. CLASS MANAGEMENT ROUTES (Admin & Teacher)
+# =======================================================
+
+# 4.1 Tạo lớp học (Chỉ Admin)
+@app.post(settings.API_PREFIX + "/admin/classes", response_model=schemas.ClassOut)
+async def create_class_route(c: schemas.ClassCreate, db: AsyncSession = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
+    if current_user.role != "admin": raise HTTPException(status_code=403, detail="Chỉ Admin mới được tạo lớp")
+    
+    new_cls = await crud.create_class(db, c)
+    if not new_cls:
+        raise HTTPException(status_code=400, detail="Mã lớp (Code) đã tồn tại")
+    return new_cls
+
+# 4.2 Lấy danh sách lớp
+@app.get(settings.API_PREFIX + "/admin/classes", response_model=list[schemas.ClassOut])
+async def get_classes_route(db: AsyncSession = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
+    # Teacher cũng có thể xem danh sách lớp (sau này sẽ lọc chỉ lớp mình dạy)
+    if current_user.role not in ["admin", "teacher"]: raise HTTPException(status_code=403, detail="Không có quyền")
+    return await crud.get_all_classes(db)
+
+# 4.3 Thêm học sinh vào lớp
+@app.post(settings.API_PREFIX + "/admin/classes/{class_id}/students")
+async def add_student_route(class_id: int, payload: schemas.AddStudentToClass, db: AsyncSession = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
+    if current_user.role not in ["admin", "teacher"]: raise HTTPException(status_code=403, detail="Không có quyền")
+    
+    result = await crud.add_student_to_class(db, class_id, payload.student_username)
+    if result == "class_not_found": raise HTTPException(status_code=404, detail="Lớp không tồn tại")
+    if result == "student_not_found": raise HTTPException(status_code=404, detail="Không tìm thấy học sinh này")
+    if result == "already_in_class": raise HTTPException(status_code=400, detail="Học sinh đã ở trong lớp này rồi")
+    
+    return {"status": "success", "message": f"Đã thêm {payload.student_username} vào lớp"}
+# 4.4 Gán Giáo viên cho lớp (Chỉ Admin)
+@app.post(settings.API_PREFIX + "/admin/classes/{class_id}/assign_teacher")
+async def assign_teacher_route(
+    class_id: int, 
+    payload: dict = Body(...), # Body gửi lên: {"teacher_id": 5}
+    db: AsyncSession = Depends(get_db), 
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    if current_user.role != "admin": raise HTTPException(status_code=403, detail="Quyền hạn bị từ chối")
+    
+    teacher_id = payload.get("teacher_id")
+    success = await crud.assign_teacher_to_class(db, class_id, teacher_id)
+    if not success: raise HTTPException(status_code=404, detail="Lớp học không tồn tại")
+    
+    return {"status": "success", "message": "Đã phân công giáo viên chủ nhiệm"}
+# THÊM API XÓA SINH VIÊN KHỎI LỚP
+@app.delete(settings.API_PREFIX + "/admin/classes/{class_id}/students/{student_id}")
+async def remove_student_route(class_id: int, student_id: int, db: AsyncSession = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
+    if current_user.role != "admin": raise HTTPException(status_code=403, detail="Không có quyền")
+    await crud.remove_student_from_class(db, class_id, student_id)
+    return {"status": "removed"}
+
+# =======================================================
+# 5. TEACHER ROUTES (Dành riêng cho Giáo viên)
+# =======================================================
+
+@app.get(settings.API_PREFIX + "/teacher/my-classes", response_model=list[schemas.ClassOut])
+async def get_my_classes_route(db: AsyncSession = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
+    if current_user.role != "teacher": 
+        raise HTTPException(status_code=403, detail="Bạn không phải là Giáo viên")
+    return await crud.get_teacher_classes(db, current_user.id)

@@ -1,18 +1,47 @@
-from sqlalchemy import Column, Integer, String, Text, Boolean, ForeignKey, JSON, Float, DateTime
+from sqlalchemy import Column, Integer, String, Text, Boolean, ForeignKey, JSON, Float, DateTime, Table
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from .database import Base
 
+# Bảng phụ để liên kết Sinh viên - Lớp học (Quan hệ nhiều-nhiều)
+class_student_association = Table(
+    'class_students', Base.metadata,
+    Column('user_id', Integer, ForeignKey('users.id')),
+    Column('class_id', Integer, ForeignKey('classes.id'))
+)
 
 class User(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String(50), unique=True, index=True, nullable=False)
-    email = Column(String, unique=True, index=True)     # <--- THÊM MỚI
-    phone_number = Column(String, nullable=True)        # <--- THÊM MỚI
+    email = Column(String, unique=True, index=True)
+    phone_number = Column(String, nullable=True)
     password_hash = Column(String(200), nullable=False)
     full_name = Column(String(100), nullable=True)
-    role = Column(String(20), default="student") # student / admin
+    role = Column(String(20), default="student") # student / teacher / admin
+
+    # Quan hệ ngược:
+    # 1. Các lớp mà user này làm Giáo viên chủ nhiệm
+    teaching_classes = relationship("Class", back_populates="teacher")
+    
+    # 2. Các lớp mà user này là Học sinh (thông qua bảng phụ)
+    enrolled_classes = relationship("Class", secondary=class_student_association, back_populates="students")
+
+class Class(Base):
+    __tablename__ = "classes"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), nullable=False) # Tên lớp (VD: CNTT_K15)
+    code = Column(String(20), unique=True, index=True) # Mã lớp (VD: IT001) - Dùng để tìm kiếm
+    description = Column(Text, nullable=True)
+    
+    # Giáo viên chủ nhiệm (1 Lớp có 1 GV)
+    teacher_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    teacher = relationship("User", back_populates="teaching_classes")
+
+    # Danh sách học sinh trong lớp
+    students = relationship("User", secondary=class_student_association, back_populates="enrolled_classes")
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 class Question(Base):
     __tablename__ = "questions"
@@ -24,6 +53,9 @@ class Question(Base):
     answer = Column(Integer, nullable=False)  # index of correct choice
     explanation = Column(Text, nullable=True)
     active = Column(Boolean, default=True)
+    
+    # (Nâng cao sau này: Question có thể thuộc về 1 Giáo viên cụ thể để không bị lộ đề)
+    creator_id = Column(Integer, ForeignKey("users.id"), nullable=True)
 
 class ExamResult(Base):
     __tablename__ = "exam_results"
@@ -32,8 +64,8 @@ class ExamResult(Base):
     score = Column(Float, nullable=False)
     total_questions = Column(Integer, nullable=False)
     correct_answers = Column(Integer, nullable=False)
-    detail_history = Column(JSON, nullable=True) # Lưu lại đáp án chi tiết
+    detail_history = Column(JSON, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
-    # Quan hệ để truy vấn ngược
+    # Quan hệ
     user = relationship("User", backref="exam_results")

@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from "react";
 import Quiz from "./components/Quiz";
-import AdminDashboard from "./components/AdminDashboard"; // <--- 1. IMPORT QUAN TRỌNG
-import "./index.css";
+import AdminDashboard from "./components/AdminDashboard";
+import TeacherDashboard from "./components/TeacherDashboard"; // Đã import đúng
 import StudentDashboard from "./components/StudentDashboard";
+import "./index.css";
 
 export default function App() {
   const [gameStarted, setGameStarted] = useState(false);
   const [username, setUsername] = useState("");
   const [role, setRole] = useState("student");
-  const [showAdmin, setShowAdmin] = useState(false); // <--- 2. STATE MỚI ĐỂ BẬT ADMIN
+  const [showAdmin, setShowAdmin] = useState(false);
   const [viewMode, setViewMode] = useState('config');
   const [email, setEmail] = useState("");
-  
 
   const [config, setConfig] = useState({
     limit: 10,
@@ -27,12 +27,15 @@ export default function App() {
     const storedEmail = localStorage.getItem("email");
     
     if (!token) {
-      alert("Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại!");
-      window.location.href = "/login.html";
+      // Nếu chưa đăng nhập, đá về trang login
+      if (window.location.pathname !== "/login.html") {
+         alert("Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại!");
+         window.location.href = "/login.html";
+      }
     } else {
       if (storedUser) setUsername(storedUser);
       if (storedRole) setRole(storedRole);
-      if (storedEmail) setEmail(storedEmail); // Set email
+      if (storedEmail) setEmail(storedEmail);
     }
   }, []);
 
@@ -41,9 +44,10 @@ export default function App() {
     setGameStarted(true);
     setViewMode('quiz');
   };
+
   const onQuizRetry = () => {
     setGameStarted(false);
-    setViewMode('config'); // Quay lại Student Dashboard (tab cấu hình)
+    setViewMode('config');
   };
 
   const handleLogout = () => {
@@ -51,81 +55,80 @@ export default function App() {
     window.location.href = "/login.html";
   };
 
-  // 3. SỬA HÀM NÀY: Bật chế độ Admin thay vì Alert
   const handleAdminAction = () => {
     setShowAdmin(true);
   };
 
   return (
     <div className="app-container">
-      {/* HEADER: HIỂN THỊ THÔNG TIN USER (Được đẩy lên Z-INDEX cao nhất) */}
-      <div style={{ 
-        position: "fixed", // Đổi từ 'absolute' sang 'fixed'
-        top: "15px", 
-        right: "20px", 
-        color: "#1e293b", // Đổi màu chữ sang tối để nhìn rõ trên nền trắng
-        zIndex: 1000,     // Tăng Z-index lên mức cao nhất
-        display: "flex", 
-        alignItems: "center", 
-        gap: "15px",
-        background: 'rgba(255,255,255,0.7)', // Thêm nền mờ để chữ không bị nhòe
-        padding: '5px 10px',
-        borderRadius: '8px',
-        backdropFilter: 'blur(5px)' // Hiệu ứng mờ nền
-      }}>
-        {username && (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: '1.2' }}>
-            <span style={{ textShadow: "0 1px 3px rgba(0,0,0,0.1)" }}>
-              Xin chào, <b>{username}</b> <small>({role})</small>
-            </span>
-            {/* Hiển thị Email nhỏ bên dưới tên */}
-            <span style={{ fontSize: '0.75rem', color: '#4b5563' }}>{email}</span>
-          </div>
+      
+      {/* HEADER: CHỈ HIỂN THỊ KHI KHÔNG PHẢI LÀ TEACHER (Vì Teacher có Sidebar riêng) */}
+      {role !== 'teacher' && (
+        <div style={{ 
+          position: "fixed", 
+          top: "15px", 
+          right: "20px", 
+          color: "#1e293b", 
+          zIndex: 1000, 
+          display: "flex", 
+          alignItems: "center", 
+          gap: "15px",
+          background: 'rgba(255,255,255,0.7)',
+          padding: '5px 15px',
+          borderRadius: '8px',
+          backdropFilter: 'blur(5px)'
+        }}>
+          {username && (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: '1.2' }}>
+              <span style={{ textShadow: "0 1px 3px rgba(0,0,0,0.1)" }}>
+                Xin chào, <b>{username}</b> <small>({role})</small>
+              </span>
+              <span style={{ fontSize: '0.75rem', color: '#4b5563' }}>{email}</span>
+            </div>
+          )}
           
-        )}
-        
-        {/* NÚT ADMIN: Chỉ hiện nếu role là 'admin' */}
-        {role === 'admin' && (
-            <button 
-                onClick={handleAdminAction}
-                style={{ 
-                  background: "linear-gradient(45deg, #f59e0b, #d97706)", 
-                  color: "#fff",
-                  border: "none", 
-                  padding: "6px 12px", 
-                  borderRadius: "20px", 
-                  cursor: "pointer", 
-                  fontWeight: "bold",
-                  boxShadow: "0 4px 6px rgba(0,0,0,0.2)",
-                  transition: "transform 0.2s"
-                }}
-                title="Trang quản trị viên"
-            >
-                ⚙ Quản lý
-            </button>
-        )}
+          {/* NÚT ADMIN: Chỉ hiện nếu role là 'admin' */}
+          {role === 'admin' && !showAdmin && (
+              <button 
+                  onClick={handleAdminAction}
+                  style={{ 
+                    background: "linear-gradient(45deg, #f59e0b, #d97706)", 
+                    color: "#fff", border: "none", padding: "6px 12px", borderRadius: "20px", 
+                    cursor: "pointer", fontWeight: "bold", boxShadow: "0 4px 6px rgba(0,0,0,0.2)"
+                  }}
+              >
+                  ⚙ Quản lý
+              </button>
+          )}
 
-        <div style={{ width: "1px", height: "20px", background: "rgba(255,255,255,0.3)" }}></div>
+          <div style={{ width: "1px", height: "20px", background: "rgba(0,0,0,0.2)" }}></div>
 
-        <button 
-          onClick={handleLogout}
-          style={{ background: "transparent", border: "none", color: "#ff6b6b", cursor: "pointer", textDecoration: "underline", fontWeight: "600" }}
-        >
-          Đăng xuất
-        </button>
-      </div>
+          <button 
+            onClick={handleLogout}
+            style={{ background: "transparent", border: "none", color: "#ff6b6b", cursor: "pointer", textDecoration: "underline", fontWeight: "600" }}
+          >
+            Đăng xuất
+          </button>
+        </div>
+      )}
 
-      {/* Trường hợp 1: Đang mở trang Admin */}
-      {showAdmin ? (
+      {/* --- PHẦN LOGIC HIỂN THỊ CHÍNH (ĐÃ SỬA) --- */}
+      
+      {/* Trường hợp 1: Admin đang bật chế độ Quản lý */}
+      {role === 'admin' && showAdmin ? (
         <AdminDashboard onBack={() => setShowAdmin(false)} />
       ) : 
-      /* Trường hợp 2: Đang làm bài thi */
+      
+      /* Trường hợp 2: Giáo viên -> Vào thẳng Teacher Dashboard */
+      role === 'teacher' ? (
+        <TeacherDashboard onLogout={handleLogout} />
+      ) :
+
+      /* Trường hợp 3: Sinh viên đang làm bài thi */
       gameStarted ? (
-        // Sử dụng hàm onQuizRetry mới (đã được định nghĩa trong App.jsx)
         <Quiz config={config} onRetry={onQuizRetry} /> 
       ) : (
-        /* Trường hợp 3: Student Dashboard (Hiển thị các Tab Cấu hình, Lịch sử, Leaderboard) */
-        // Chuyển toàn bộ form cũ vào component StudentDashboard
+        /* Trường hợp 4: Mặc định (Sinh viên Dashboard) */
         <StudentDashboard 
             viewMode={viewMode} 
             setViewMode={setViewMode} 
@@ -134,7 +137,7 @@ export default function App() {
             handleStart={handleStart} 
         />
       )}
-      {/* KHÔNG CÓ DIV.CARD VÀ FORM CẤU HÌNH CŨ Ở ĐÂY NỮA */}
+      
     </div>
   );
 }

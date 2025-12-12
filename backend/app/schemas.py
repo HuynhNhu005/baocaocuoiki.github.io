@@ -64,3 +64,25 @@ class ExamResultOut(BaseModel):
     created_at: datetime
     class Config:
         from_attributes = True
+        
+# --- CLASS SCHEMAS (MỚI) ---
+class ClassBase(BaseModel):
+    name: str
+    code: str  # Mã lớp (VD: IT001)
+    description: Optional[str] = None
+
+class ClassCreate(ClassBase):
+    pass
+
+class ClassOut(ClassBase):
+    id: int
+    teacher_id: Optional[int] = None
+    student_count: int = 0  # Trả về số lượng học sinh trong lớp
+    students: List[UserOut] = []
+    
+    class Config:
+        from_attributes = True
+
+# Schema để thêm học sinh vào lớp
+class AddStudentToClass(BaseModel):
+    student_username: str  # Admin nhập username để thêm
