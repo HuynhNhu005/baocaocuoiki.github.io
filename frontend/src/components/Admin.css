@@ -73,6 +73,10 @@
   margin-left: var(--sidebar-width);
   flex: 1;
   padding: 30px;
+  background-color: #f8fafc;
+  min-height: 100vh; /* Đảm bảo chiều cao tối thiểu */
+  width: calc(100% - var(--sidebar-width)); /* MỚI: Tính toán chiều rộng chính xác */
+  box-sizing: border-box; /* MỚI: Để padding không làm vỡ layout */
 }
 
 .header-bar {
@@ -85,21 +89,23 @@
 /* STATS CARDS */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); 
-  gap: 20px;
+  /* MỚI: Tự động chia cột, mỗi cột tối thiểu 280px */
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); 
+  gap: 25px; /* Tăng khoảng cách */
   margin-bottom: 30px;
-  padding: 10px; 
 }
 
 .stat-card {
   background: var(--card-bg);
   padding: 25px;
   border-radius: 12px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); /* Giảm bóng cho tinh tế */
   display: flex;
-  align-items: center;
-  gap: 20px;
-  transition: transform 0.2s;
+  flex-direction: column; /* MỚI: Xếp dọc để nội dung thoáng hơn */
+  align-items: flex-start;
+  gap: 15px;
+  transition: transform 0.2s, box-shadow 0.2s;
+  border: 1px solid #e2e8f0; /* MỚI: Thêm viền nhẹ */
 }
 
 .stat-card:hover {
@@ -125,16 +131,19 @@
 .stat-info p {
   color: var(--secondary-color);
   margin: 0;
-  font-size: 0.9rem;
+  font-size: 1rem;
 }
 
 /* TABLE STYLES */
 .table-card {
   background: var(--card-bg);
   border-radius: 12px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  padding: 20px;
-  overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  padding: 25px; /* Tăng padding */
+  margin-bottom: 30px;
+  width: 100%; /* MỚI: Chiếm hết chiều rộng */
+  border: 1px solid #e2e8f0;
+  overflow-x: auto; /* MỚI: Cho phép cuộn ngang nếu bảng quá rộng */
 }
 
 .table-header {
@@ -152,7 +161,7 @@
   border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
-  display: flex;
+  display: flinline-flex;
   align-items: center;
   gap: 8px;
   box-shadow: 0 4px 10px rgba(79, 70, 229, 0.3);
@@ -160,26 +169,29 @@
 
 .modern-table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate; /* MỚI: Để bo góc */
+  border-spacing: 0;
+
 }
 
 .modern-table th {
   text-align: left;
-  padding: 15px;
+  padding: 16px;
   background: #f8fafc;
   color: #475569;
   font-weight: 600;
   border-bottom: 2px solid #e2e8f0;
+  font-size: 0.95rem;
 }
 
 .modern-table td {
-  padding: 15px;
+  padding: 16px;
   border-bottom: 1px solid #e2e8f0;
   vertical-align: middle;
 }
 
 .modern-table tr:hover {
-  background-color: #f8fafc;
+  background-color: #f1f5f9; /* Màu hover rõ hơn */
 }
 
 /* BADGES (Role & Category) */
@@ -197,8 +209,11 @@
 .badge.Math { background: #dcfce7; color: #15803d; }
 .badge.Science { background: #f3e8ff; color: #7e22ce; }
 .badge.Geography { background: #ffedd5; color: #c2410c; }
+.badge.Literature { background: #fce7f3; color: #be185d; } /* Thêm màu Văn */
+.badge.English { background: #ffedd5; color: #c2410c; } /* Thêm màu Anh */
 
 .badge.admin { background: #fee2e2; color: #991b1b; }
+.badge.teacher { background: #fef3c7; color: #b45309; }
 .badge.student { background: #d1fae5; color: #065f46; }
 
 /* ACTION BUTTONS & CONTAINER (New) */
@@ -209,13 +224,16 @@
 }
 
 .action-btn {
-  border: none;
+  border: 1px solid transparent; /* MỚI: Để nút có kích thước ổn định */
   background: transparent;
   cursor: pointer;
-  font-size: 1rem; /* Thay đổi size icon */
-  padding: 6px; /* Tăng padding nút icon */
-  border-radius: 4px;
-  transition: background 0.2s;
+  font-size: 1.1rem;
+  padding: 8px;
+  border-radius: 6px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .action-btn.edit { color: #3b82f6; }
@@ -243,22 +261,27 @@
 .modal-overlay {
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.5);
+  background: rgba(15, 23, 42, 0.6);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 1000;
   backdrop-filter: blur(4px);
+  padding: 20px;
 }
 
 .modal-content {
   background: white;
   padding: 30px;
   border-radius: 16px;
-  width: 500px;
-  max-width: 90%;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  /* MỚI: Kích thước linh hoạt cho màn hình lớn */
+  width: 90%; 
+  max-width: 1000px; /* Tăng độ rộng tối đa */
+  max-height: 90vh; /* Giới hạn chiều cao */
+  overflow-y: auto; /* Cho phép cuộn dọc */
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   animation: slideIn 0.3s ease;
+  position: relative; /* Để các thành phần con định vị */
 }
 
 @keyframes slideIn {
@@ -269,11 +292,13 @@
 .form-group { margin-bottom: 15px; }
 .form-group input, .form-group select, .form-group textarea {
   width: 100%;
-  padding: 10px;
+  padding: 12px;
   border: 1px solid #cbd5e1;
   border-radius: 8px;
   margin-top: 5px;
   font-size: 0.95rem;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
 }
 
 .form-group input:focus {
@@ -286,4 +311,29 @@
   justify-content: flex-end;
   gap: 10px;
   margin-top: 20px;
+}
+
+/* Modal Level 1 (Tạo đề thi) */
+.modal-overlay {
+  z-index: 1000; /* Thấp hơn */
+}
+
+/* Modal Level 2 (Tạo câu hỏi con) */
+.modal-overlay-level-2 {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.7); /* Đậm hơn xíu để phân biệt */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000; /* Cao hơn hẳn để nằm đè lên trên */
+}
+
+/* Scrollbar đẹp cho danh sách câu hỏi */
+.question-list-container::-webkit-scrollbar {
+  width: 6px;
+}
+.question-list-container::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  border-radius: 4px;
 }

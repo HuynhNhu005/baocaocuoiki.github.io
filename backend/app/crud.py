@@ -229,3 +229,40 @@ async def get_teacher_classes(db: AsyncSession, teacher_id: int):
     for c in classes:
         c.student_count = len(c.students)
     return classes
+# Lấy bảng điểm của một lớp học
+async def get_class_gradebook(db: AsyncSession, class_id: int):
+    # 1. Lấy danh sách học sinh trong lớp
+    class_query = select(models.Class).options(selectinload(models.Class.students)).where(models.Class.id == class_id)
+    result = await db.execute(class_query)
+    current_class = result.scalars().first()
+    
+    if not current_class:
+        return []
+
+    gradebook = []
+    
+    # 2. Với mỗi học sinh, tính điểm
+    for student in current_class.students:
+        # Lấy tất cả kết quả thi của học sinh này
+        res_query = select(models.ExamResult).where(models.ExamResult.user_id == student.id)
+        res_exec = await db.execute(res_query)
+        exams = res_exec.scalars().all()
+        
+        total_exams = len(exams)
+        avg_score = 0
+        best_score = 0
+        
+        if total_exams > 0:
+            avg_score = sum([e.score for e in exams]) / total_exams
+            best_score = max([e.score for e in exams])
+            
+        gradebook.append({
+            "student_id": student.id,
+            "username": student.username,
+            "full_name": student.full_name,
+            "exam_count": total_exams,
+            "avg_score": round(avg_score, 2),
+            "best_score": round(best_score, 2)
+        })
+        
+    return gradebook

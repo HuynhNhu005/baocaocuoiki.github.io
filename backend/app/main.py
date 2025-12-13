@@ -78,10 +78,13 @@ async def login(form_data: schemas.UserLogin, db: AsyncSession = Depends(get_db)
 # =======================================================
 
 # API Tạo câu hỏi (Dùng chung cho cả Admin khi thêm mới)
-@app.post(settings.API_PREFIX + "/questions", response_model=schemas.QuestionWithAnswer)
-async def create_question(q: schemas.QuestionCreate, db: AsyncSession = Depends(get_db)):
-    # Lưu ý: Trong thực tế nên check quyền Admin ở đây, nhưng để đơn giản ta tạm mở
-    return await crud.create_question(db, q)
+@app.post(settings.API_PREFIX + "/questions", response_model=schemas.QuestionOut)
+async def create_question(question: schemas.QuestionCreate, db: AsyncSession = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
+    # SỬA DÒNG NÀY: Cho phép cả admin VÀ teacher
+    if current_user.role not in ["admin", "teacher"]: 
+        raise HTTPException(status_code=403, detail="Bạn không có quyền thêm câu hỏi")
+        
+    return await crud.create_question(db, question)
 
 # API Lấy đề thi ngẫu nhiên (Cho sinh viên làm bài)
 @app.get(settings.API_PREFIX + "/questions/random", response_model=list[schemas.QuestionOut])
@@ -148,9 +151,14 @@ async def admin_stats(db: AsyncSession = Depends(get_db), current_user: models.U
 # 3.2 Lấy danh sách tất cả câu hỏi (kèm đáp án để sửa)
 @app.get(settings.API_PREFIX + "/admin/questions", response_model=list[schemas.QuestionWithAnswer])
 async def admin_get_questions(db: AsyncSession = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
-    if current_user.role != "admin": raise HTTPException(status_code=403, detail="Không có quyền truy cập")
+    
+    # --- SỬA DÒNG NÀY ---
+    # Cũ: if current_user.role != "admin": ...
+    # Mới: Cho phép cả ADMIN và TEACHER
+    if current_user.role not in ["admin", "teacher"]: 
+        raise HTTPException(status_code=403, detail="Không có quyền truy cập")
+        
     return await crud.get_all_questions(db)
-
 # 3.3 Xóa câu hỏi
 @app.delete(settings.API_PREFIX + "/admin/questions/{qid}")
 async def admin_delete_question(qid: int, db: AsyncSession = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
@@ -173,10 +181,16 @@ async def admin_get_users(db: AsyncSession = Depends(get_db), current_user: mode
     if current_user.role != "admin": raise HTTPException(status_code=403, detail="Không có quyền truy cập")
     return await crud.get_all_users(db)
 
+
 # 3.6 Xem lịch sử thi của một người dùng bất kỳ
 @app.get(settings.API_PREFIX + "/admin/users/{user_id}/history", response_model=list[schemas.ExamResultOut])
 async def admin_get_user_history(user_id: int, db: AsyncSession = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
-    if current_user.role != "admin": raise HTTPException(status_code=403, detail="Không có quyền truy cập")
+    # --- SỬA ĐOẠN NÀY ---
+    # Cũ: if current_user.role != "admin": ...
+    # Mới: Cho phép cả "admin" và "teacher"
+    if current_user.role not in ["admin", "teacher"]: 
+        raise HTTPException(status_code=403, detail="Không có quyền truy cập")
+        
     return await crud.get_user_history(db, user_id)
 
 # 3.7 Xóa người dùng
@@ -263,3 +277,15 @@ async def get_my_classes_route(db: AsyncSession = Depends(get_db), current_user:
     if current_user.role != "teacher": 
         raise HTTPException(status_code=403, detail="Bạn không phải là Giáo viên")
     return await crud.get_teacher_classes(db, current_user.id)
+
+# API Xem bảng điểm lớp
+@app.get(settings.API_PREFIX + "/teacher/classes/{class_id}/gradebook")
+async def get_class_gradebook_route(class_id: int, db: AsyncSession = Depends(get_db), current_user: models.User = Depends(auth.get_current_user)):
+    if current_user.role != "teacher": raise HTTPException(status_code=403, detail="Không có quyền")
+    return await crud.get_class_gradebook(db, class_id)
+
+# API Ra đề thi (Giả lập để frontend chạy mượt)
+@app.post(settings.API_PREFIX + "/teacher/exams")
+async def create_exam_route(payload: dict = Body(...), current_user: models.User = Depends(auth.get_current_user)):
+    # Sau này bạn có thể lưu vào Database thật
+    return {"status": "success", "message": f"Đã tạo bài thi: {payload.get('title')}"}
