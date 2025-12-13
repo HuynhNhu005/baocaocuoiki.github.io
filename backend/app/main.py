@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException, Body, status
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, text
 from .database import engine, Base, get_db
 # Đảm bảo bạn đã có file auth.py trong cùng thư mục app
 from . import crud, schemas, models, utils, auth 
@@ -286,6 +286,120 @@ async def get_class_gradebook_route(class_id: int, db: AsyncSession = Depends(ge
 
 # API Ra đề thi (Giả lập để frontend chạy mượt)
 @app.post(settings.API_PREFIX + "/teacher/exams")
-async def create_exam_route(payload: dict = Body(...), current_user: models.User = Depends(auth.get_current_user)):
-    # Sau này bạn có thể lưu vào Database thật
-    return {"status": "success", "message": f"Đã tạo bài thi: {payload.get('title')}"}
+async def create_exam_route(
+    payload: dict = Body(...), 
+    db: AsyncSession = Depends(get_db), 
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    if current_user.role != "teacher": 
+        raise HTTPException(status_code=403, detail="Không có quyền")
+
+    # Lưu đề thi thật vào Database
+    new_exam = models.Exam(
+        title=payload.get("title"),
+        class_id=payload.get("class_id"),
+        duration=payload.get("duration"),
+        question_ids=payload.get("question_ids", []), # Nhận danh sách ID câu hỏi từ frontend
+        max_attempts=payload.get("max_attempts", 1)
+    )
+    db.add(new_exam)
+    await db.commit()
+    return {"status": "success", "message": f"Đã giao bài thi: {new_exam.title}"}
+
+# --- 2. THÊM API: GIÁO VIÊN XEM LỊCH SỬ GIAO ĐỀ ---
+@app.get(settings.API_PREFIX + "/teacher/exams-history")
+async def get_teacher_exams_history(
+    db: AsyncSession = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    if current_user.role != "teacher": raise HTTPException(403, "Không có quyền")
+    
+    # Lấy các bài thi thuộc các lớp mà giáo viên này dạy
+    # Logic: Join Exam -> Class -> check Class.teacher_id
+    stmt = select(models.Exam).join(models.Class).where(models.Class.teacher_id == current_user.id).order_by(models.Exam.created_at.desc())
+    res = await db.execute(stmt)
+    exams = res.scalars().all()
+    
+    # Trả về dữ liệu kèm tên lớp
+    result = []
+    for ex in exams:
+        # Lazy load tên lớp (hoặc query eager load nếu muốn tối ưu)
+        # Ở đây làm đơn giản:
+        cls = await db.get(models.Class, ex.class_id)
+        result.append({
+            "id": ex.id,
+            "title": ex.title,
+            "class_name": cls.name,
+            "duration": ex.duration,
+            "max_attempts": ex.max_attempts,
+            "created_at": ex.created_at
+        })
+    return result
+# --- CẬP NHẬT API: LẤY DANH SÁCH LỚP CỦA SINH VIÊN ---
+@app.get(settings.API_PREFIX + "/student/dashboard-info")
+async def get_student_dashboard_info(
+    db: AsyncSession = Depends(get_db), 
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    # 1. Tìm TẤT CẢ các lớp mà sinh viên này tham gia
+    # Logic: Lấy danh sách class_id từ bảng trung gian class_students
+    stmt = text("SELECT class_id FROM class_students WHERE user_id = :uid")
+    result = await db.execute(stmt, {"uid": current_user.id})
+    class_ids = [row[0] for row in result.fetchall()] # Lấy hết danh sách ID
+
+    if not class_ids:
+        return {"classes": [], "assignments": []}
+
+    # 2. Lấy thông tin chi tiết của các lớp đó
+    # Dùng .in_(class_ids) để tìm nhiều lớp cùng lúc
+    res_classes = await db.execute(select(models.Class).where(models.Class.id.in_(class_ids)))
+    my_classes = res_classes.scalars().all()
+
+    # 3. Lấy danh sách bài thi được giao cho CÁC lớp này
+    # Tìm bài thi thuộc bất kỳ lớp nào trong danh sách class_ids
+    res_exams = await db.execute(
+        select(models.Exam)
+        .where(models.Exam.class_id.in_(class_ids))
+        .order_by(models.Exam.created_at.desc())
+    )
+    assignments = res_exams.scalars().all()
+
+    # Trả về format mới: "classes" là một danh sách
+    return {
+        "classes": [
+            {"id": c.id, "name": c.name, "code": c.code, "teacher_id": c.teacher_id} 
+            for c in my_classes
+        ],
+        "assignments": assignments 
+    }
+
+# API: Lấy chi tiết đề thi (để bắt đầu làm)
+@app.get(settings.API_PREFIX + "/student/exams/{exam_id}")
+async def get_exam_details(
+    exam_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    # Lấy thông tin đề
+    res = await db.execute(select(models.Exam).where(models.Exam.id == exam_id))
+    exam = res.scalars().first()
+    if not exam: raise HTTPException(404, "Không tìm thấy bài thi")
+
+    # Lấy danh sách câu hỏi chi tiết dựa trên question_ids
+    # Lưu ý: Postgres Array cần xử lý khéo
+    q_ids = exam.question_ids
+    if not q_ids: return []
+
+    res_q = await db.execute(select(models.Question).where(models.Question.id.in_(q_ids)))
+    questions = res_q.scalars().all()
+
+    # Trộn ngẫu nhiên câu hỏi nếu muốn
+    import random
+    questions_list = [schemas.QuestionOut.model_validate(q) for q in questions]
+    random.shuffle(questions_list)
+
+    return {
+        "exam": exam,
+        "questions": questions_list,
+        "max_attempts": exam.max_attempts
+    }

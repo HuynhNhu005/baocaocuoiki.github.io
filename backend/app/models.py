@@ -2,7 +2,7 @@ from sqlalchemy import Column, Integer, String, Text, Boolean, ForeignKey, JSON,
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from .database import Base
-
+from sqlalchemy.dialects.postgresql import ARRAY
 # Bảng phụ để liên kết Sinh viên - Lớp học (Quan hệ nhiều-nhiều)
 class_student_association = Table(
     'class_students', Base.metadata,
@@ -37,6 +37,7 @@ class Class(Base):
     # Giáo viên chủ nhiệm (1 Lớp có 1 GV)
     teacher_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     teacher = relationship("User", back_populates="teaching_classes")
+    exams = relationship("Exam", back_populates="target_class")
 
     # Danh sách học sinh trong lớp
     students = relationship("User", secondary=class_student_association, back_populates="enrolled_classes")
@@ -69,3 +70,21 @@ class ExamResult(Base):
     
     # Quan hệ
     user = relationship("User", backref="exam_results")
+    
+class Exam(Base):
+    __tablename__ = "exams"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String, nullable=False)
+    class_id = Column(Integer, ForeignKey("classes.id"))
+    duration = Column(Integer, default=45) # Thời gian làm bài (phút)
+    question_ids = Column(ARRAY(Integer))  # Lưu danh sách ID câu hỏi: [1, 5, 10]
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    max_attempts = Column(Integer, default=1)
+
+    # Relationship
+    target_class = relationship("Class", back_populates="exams")
+
+# Cập nhật ngược lại vào class Class (để link 2 bảng)
+# Tìm class Class cũ và thêm dòng này vào bên trong:
+# exams = relationship("Exam", back_populates="target_class")

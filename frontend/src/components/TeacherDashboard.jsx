@@ -5,6 +5,7 @@ export default function TeacherDashboard({ onLogout }) {
   const [activeTab, setActiveTab] = useState("my-classes");
   const [classes, setClasses] = useState([]);
   const [questions, setQuestions] = useState([]); 
+  const [examHistory, setExamHistory] = useState([]);
   const [selectedClass, setSelectedClass] = useState(null); 
   
   // STATE CÁC TÍNH NĂNG
@@ -43,6 +44,12 @@ export default function TeacherDashboard({ onLogout }) {
         });
         
         if (res.ok) setQuestions(await res.json());
+    } catch(e) {}
+  };
+  const fetchExamHistory = async () => {
+    try {
+        const res = await fetch("http://localhost:8000/api/teacher/exams-history", { headers: { Authorization: `Bearer ${token}` } });
+        if (res.ok) setExamHistory(await res.json());
     } catch(e) {}
   };
 
@@ -92,35 +99,25 @@ export default function TeacherDashboard({ onLogout }) {
 
   const handleCreateExam = async (e) => {
       e.preventDefault();
-      
-      if (selectedQuestionIds.length === 0) {
-          alert("⚠️ Vui lòng chọn ít nhất 1 câu hỏi!");
-          return;
-      }
-
+      if (selectedQuestionIds.length === 0) { alert("⚠️ Chọn ít nhất 1 câu hỏi!"); return; }
       const form = e.target;
       const payload = {
           class_id: selectedClass.id,
           title: form.title.value,
           duration: parseInt(form.duration.value),
           question_count: selectedQuestionIds.length,
-          category: "Mixed", // Tạm thời để Mixed vì chọn nhiều nguồn
-          // Lưu ý: Backend cần cập nhật để nhận danh sách ID câu hỏi nếu muốn lưu chính xác
-          // Hiện tại ta gửi để frontend hiển thị ok
+          question_ids: selectedQuestionIds,
+          max_attempts: parseInt(form.max_attempts.value) // Lấy từ form
       };
-      
       const res = await fetch("http://localhost:8000/api/teacher/exams", {
           method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
           body: JSON.stringify(payload)
       });
-
       if (res.ok) {
-          alert(`✅ Đã giao bài thi "${payload.title}" gồm ${payload.question_count} câu hỏi!`);
-          setShowCreateExam(false);
-          setSelectedQuestionIds([]); // Reset
+          alert(`✅ Đã giao bài "${payload.title}" (Tối đa ${payload.max_attempts} lần làm)!`);
+          setShowCreateExam(false); setSelectedQuestionIds([]);
       }
   };
-
   // --- CÁC TÍNH NĂNG KHÁC ---
   const handleViewGradebook = async () => {
       if (!selectedClass) return;
@@ -172,7 +169,7 @@ export default function TeacherDashboard({ onLogout }) {
   };
 
   // --- RENDER ---
-  const IconClass = () => <span>🏫</span>; const IconQues = () => <span>❓</span>; const IconLogOut = () => <span>🚪</span>;
+  const IconClass = () => <span>🏫</span>; const IconQues = () => <span>❓</span>;const IconHistory = () => <span>📜</span>; const IconLogOut = () => <span>🚪</span>;
 
   return (
     <div className="admin-container">
@@ -185,13 +182,14 @@ export default function TeacherDashboard({ onLogout }) {
         </div>
         <button className={`nav-item ${activeTab === "my-classes" ? "active" : ""}`} onClick={() => {setActiveTab("my-classes"); setSelectedClass(null);}}><IconClass /> Lớp chủ nhiệm</button>
         <button className={`nav-item ${activeTab === "questions" ? "active" : ""}`} onClick={() => setActiveTab("questions")}><IconQues /> Ngân hàng câu hỏi</button>
+        <button className={`nav-item ${activeTab === "exam-history" ? "active" : ""}`} onClick={() => setActiveTab("exam-history")}><IconHistory /> Lịch sử giao bài</button>
         <button className="nav-item logout" onClick={onLogout}><IconLogOut /> Đăng xuất</button>
       </div>
 
       {/* MAIN CONTENT */}
       <div className="main-content">
         <div className="header-bar">
-          <h2>{activeTab === 'questions' ? "Ngân hàng câu hỏi" : selectedClass ? `Lớp: ${selectedClass.name}` : "Danh sách lớp"}</h2>
+          <h2>{activeTab === 'questions' ? "Ngân hàng câu hỏi" : activeTab === 'exam-history' ? "Lịch sử đề thi đã giao" : selectedClass ? `Lớp: ${selectedClass.name}` : "Danh sách lớp"}</h2>
         </div>
 
         {/* TAB DANH SÁCH LỚP */}
@@ -221,8 +219,29 @@ export default function TeacherDashboard({ onLogout }) {
                 </div>
             </div>
         )}
+        {/* 👇 TAB 3: LỊCH SỬ GIAO BÀI (MỚI) */}
+        {activeTab === 'exam-history' && (
+            <div className="table-card">
+                <div className="table-header"><h3>Danh sách bài thi đã tạo</h3></div>
+                <table className="modern-table">
+                    <thead><tr><th>Tên bài thi</th><th>Lớp</th><th>Thời gian</th><th>Số lượt cho phép</th><th>Ngày tạo</th></tr></thead>
+                    <tbody>
+                        {examHistory.length === 0 ? <tr><td colSpan="5" style={{textAlign:"center"}}>Chưa có bài thi nào.</td></tr> :
+                        examHistory.map(ex => (
+                            <tr key={ex.id}>
+                                <td style={{fontWeight:"bold", color:"#2563eb"}}>{ex.title}</td>
+                                <td>{ex.class_name}</td>
+                                <td>{ex.duration} phút</td>
+                                <td><span style={{background:"#dcfce7", color:"#166534", padding:"4px 8px", borderRadius:"4px"}}>{ex.max_attempts} lần</span></td>
+                                <td>{new Date(ex.created_at).toLocaleString('vi-VN')}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        )}
 
-        {/* CHI TIẾT LỚP HỌC */}
+        {/* CHI TIẾT LỚP HỌC (Giữ nguyên, chỉ sửa nút Ra đề để mở modal mới) */}
         {selectedClass && (
           <div>
             <div style={{display: "flex", gap: "10px", marginBottom: "20px"}}>
@@ -235,8 +254,7 @@ export default function TeacherDashboard({ onLogout }) {
               <table className="modern-table">
                   <thead><tr><th>ID</th><th>Tài khoản</th><th>Họ tên</th><th>Hành động</th></tr></thead>
                   <tbody>
-                    {selectedClass.students?.length === 0 ? <tr><td colSpan="4">Chưa có sinh viên.</td></tr> :
-                    selectedClass.students?.map((st) => (
+                    {selectedClass.students?.map((st) => (
                       <tr key={st.id}><td>#{st.id}</td><td style={{ fontWeight: "bold" }}>{st.username}</td><td>{st.full_name || "--"}</td><td><button className="btn-history" onClick={() => fetchStudentHistory(st.id)}>👁️ Xem bài làm</button></td></tr>
                     ))}
                   </tbody>
@@ -258,10 +276,21 @@ export default function TeacherDashboard({ onLogout }) {
                           <h4>ℹ️ Thông tin chung</h4>
                           <div className="form-group"><label>Tên bài thi:</label><input name="title" required placeholder="VD: Kiểm tra 1 tiết" /></div>
                           <div className="form-group"><label>Thời gian (phút):</label><input type="number" name="duration" defaultValue={45} /></div>
+                          {/* 👇 INPUT MỚI: SỐ LẦN LÀM BÀI */}
+                          <div className="form-group">
+                              <label>Số lần được làm:</label>
+                              <select name="max_attempts" style={{width:"100%", padding:"10px", borderRadius:"8px", border:"1px solid #ccc"}}>
+                                  <option value="1">1 lần (Kiểm tra)</option>
+                                  <option value="2">2 lần</option>
+                                  <option value="3">3 lần</option>
+                                  <option value="99">Không giới hạn (Luyện tập)</option>
+                              </select>
+                          </div>
                           <div className="form-group"><label>Đã chọn:</label><div style={{fontSize: "1.2rem", fontWeight: "bold", color: "#f59e0b"}}>{selectedQuestionIds.length} câu</div></div>
                           <button type="submit" className="btn-add" style={{width: "100%", marginTop: "10px", background: "#f59e0b"}}>🚀 Giao bài ngay</button>
                           <button type="button" className="action-btn" style={{width: "100%", marginTop: "10px"}} onClick={() => setShowCreateExam(false)}>Hủy bỏ</button>
                       </div>
+                      
 
                       {/* Cột Phải: Chọn câu hỏi */}
                       <div style={{display: "flex", flexDirection: "column", height: "500px"}}>
