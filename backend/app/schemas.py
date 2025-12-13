@@ -62,6 +62,7 @@ class ExamResultOut(BaseModel):
     total_questions: int
     correct_answers: int
     created_at: datetime
+    detail_history: Optional[List[dict]] = None
     class Config:
         from_attributes = True
         

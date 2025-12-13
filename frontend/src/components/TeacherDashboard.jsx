@@ -19,6 +19,8 @@ export default function TeacherDashboard({ onLogout }) {
   // STATE TẠO CÂU HỎI
   const [isCreatingQuestion, setIsCreatingQuestion] = useState(false); 
   const [selectedStudentHistory, setSelectedStudentHistory] = useState(null);
+  const [viewingQuestion, setViewingQuestion] = useState(null); // Lưu câu hỏi đang xem
+const [viewingExam, setViewingExam] = useState(null);         // Lưu đề thi đang xem
 
   const token = localStorage.getItem("access_token");
   const username = localStorage.getItem("username");
@@ -51,6 +53,26 @@ export default function TeacherDashboard({ onLogout }) {
         const res = await fetch("http://localhost:8000/api/teacher/exams-history", { headers: { Authorization: `Bearer ${token}` } });
         if (res.ok) setExamHistory(await res.json());
     } catch(e) {}
+  };
+  const handleViewExamDetail = async (examId) => {
+    try {
+        const res = await fetch(`http://localhost:8000/api/student/exams/${examId}`, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.ok) {
+            const data = await res.json();
+            // Xử lý parse JSON cho choices giống bên Student
+            const processedQuestions = data.questions.map(q => ({
+                ...q,
+                choices: typeof q.choices === 'string' ? JSON.parse(q.choices) : q.choices
+            }));
+            setViewingExam({ ...data.exam, questions: processedQuestions });
+        } else {
+            alert("Không tải được chi tiết đề!");
+        }
+    } catch (e) {
+        alert("Lỗi kết nối!");
+    }
   };
 
   // --- 1. XỬ LÝ TẠO CÂU HỎI (Hỗ trợ tạo lồng trong tạo đề) ---
@@ -115,7 +137,7 @@ export default function TeacherDashboard({ onLogout }) {
       });
       if (res.ok) {
           alert(`✅ Đã giao bài "${payload.title}" (Tối đa ${payload.max_attempts} lần làm)!`);
-          setShowCreateExam(false); setSelectedQuestionIds([]);
+          setShowCreateExam(false); setSelectedQuestionIds([]);fetchExamHistory();
       }
   };
   // --- CÁC TÍNH NĂNG KHÁC ---
@@ -213,7 +235,9 @@ export default function TeacherDashboard({ onLogout }) {
                         <thead><tr><th>ID</th><th>Nội dung</th><th>Chủ đề</th><th>Độ khó</th></tr></thead>
                         <tbody>
                             {questions.length === 0 ? <tr><td colSpan="4" style={{textAlign:"center"}}>Ngân hàng trống. Hãy tạo câu hỏi mới!</td></tr> :
-                            questions.map(q => (<tr key={q.id}><td>#{q.id}</td><td style={{maxWidth:"400px"}}>{q.title}</td><td><span className={`badge ${q.category}`}>{q.category}</span></td><td>{q.difficulty}</td></tr>))}
+                            questions.map(q => (<tr key={q.id} onClick={() => setViewingQuestion(q)} // 👈 Thêm sự kiện click
+                                    style={{cursor: "pointer"}} 
+                                    className="hover-row"><td>#{q.id}</td><td style={{maxWidth:"400px"}}>{q.title}</td><td><span className={`badge ${q.category}`}>{q.category}</span></td><td>{q.difficulty}</td></tr>))}
                         </tbody>
                     </table>
                 </div>
@@ -228,7 +252,10 @@ export default function TeacherDashboard({ onLogout }) {
                     <tbody>
                         {examHistory.length === 0 ? <tr><td colSpan="5" style={{textAlign:"center"}}>Chưa có bài thi nào.</td></tr> :
                         examHistory.map(ex => (
-                            <tr key={ex.id}>
+                            <tr key={ex.id}
+                            onClick={() => handleViewExamDetail(ex.id)} // 👈 Thêm sự kiện click gọi API
+                                style={{cursor: "pointer"}}>
+                                
                                 <td style={{fontWeight:"bold", color:"#2563eb"}}>{ex.title}</td>
                                 <td>{ex.class_name}</td>
                                 <td>{ex.duration} phút</td>
@@ -377,6 +404,106 @@ export default function TeacherDashboard({ onLogout }) {
            </div>
         </div>
       )}
+      {/* --- 🆕 MODAL 5: XEM CHI TIẾT CÂU HỎI --- */}
+      {viewingQuestion && (
+        <div className="modal-overlay" onClick={() => setViewingQuestion(null)}>
+            <div className="modal-content" onClick={e => e.stopPropagation()}>
+                <h3 style={{borderBottom:"2px solid #fbbf24", paddingBottom:"10px", display:"inline-block"}}>🔍 Chi tiết câu hỏi #{viewingQuestion.id}</h3>
+                <div style={{marginTop:"15px", background:"#f8fafc", padding:"15px", borderRadius:"8px"}}>
+                    <p style={{fontSize:"1.1rem", fontWeight:"bold", marginBottom:"10px"}}>{viewingQuestion.title}</p>
+                    <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10px"}}>
+                        {(typeof viewingQuestion.choices === 'string' ? JSON.parse(viewingQuestion.choices) : viewingQuestion.choices).map((c, idx) => (
+                            <div key={idx} style={{
+                                padding:"10px", 
+                                border: idx === viewingQuestion.answer ? "2px solid #10b981" : "1px solid #e2e8f0",
+                                background: idx === viewingQuestion.answer ? "#dcfce7" : "#fff",
+                                borderRadius:"6px"
+                            }}>
+                                {String.fromCharCode(65+idx)}. {c} {idx === viewingQuestion.answer && "✅"}
+                            </div>
+                        ))}
+                    </div>
+                    {viewingQuestion.explanation && (
+                        <div style={{marginTop:"15px", padding:"10px", background:"#fffbeb", borderLeft:"4px solid #f59e0b"}}>
+                            <strong>💡 Giải thích:</strong> {viewingQuestion.explanation}
+                        </div>
+                    )}
+                </div>
+                <div className="modal-actions"><button className="action-btn" onClick={() => setViewingQuestion(null)}>Đóng</button></div>
+            </div>
+        </div>
+      )}
+
+      {/* --- 🆕 MODAL 6: XEM CHI TIẾT ĐỀ THI (UPDATE: HIỆN FULL ĐÁP ÁN) --- */}
+      {viewingExam && (
+        <div className="modal-overlay" onClick={() => setViewingExam(null)}>
+            <div className="modal-content" style={{maxWidth:"800px"}} onClick={e => e.stopPropagation()}>
+                <div style={{borderBottom:"1px solid #eee", paddingBottom:"10px", marginBottom:"15px"}}>
+                    <h3 style={{margin:0}}>📄 Đề thi: {viewingExam.title}</h3>
+                    <p style={{color:"#64748b", margin:"5px 0 0 0"}}>
+                        Lớp: {viewingExam.class_id} | Thời gian: {viewingExam.duration} phút | Số câu: {viewingExam.questions.length}
+                    </p>
+                </div>
+                
+                <div style={{maxHeight:"65vh", overflowY:"auto", border:"1px solid #e2e8f0", borderRadius:"8px"}}>
+                    <table className="modern-table" style={{width:"100%"}}>
+                        <thead style={{position:"sticky", top:0, zIndex:1, background:"#f1f5f9"}}>
+                            <tr>
+                                <th style={{width: "50px", textAlign: "center"}}>STT</th>
+                                <th>Nội dung câu hỏi & Đáp án</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {viewingExam.questions.map((q, idx) => {
+                                // Xử lý parse JSON (để chắc chắn choices là mảng)
+                                const choices = typeof q.choices === 'string' ? JSON.parse(q.choices) : q.choices;
+                                
+                                return (
+                                    <tr key={idx}>
+                                        <td style={{textAlign:"center", verticalAlign: "top", paddingTop: "15px"}}>
+                                            <span style={{fontWeight:"bold", color:"#64748b", background:"#e2e8f0", padding:"4px 8px", borderRadius:"4px"}}>#{idx+1}</span>
+                                        </td>
+                                        <td style={{padding: "15px"}}>
+                                            <div style={{fontSize: "1.05rem", fontWeight: "bold", marginBottom: "12px", color: "#1e293b"}}>
+                                                {q.title}
+                                            </div>
+                                            
+                                            {/* Lưới hiển thị 4 đáp án */}
+                                            <div style={{display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px"}}>
+                                                {choices.map((c, cIdx) => (
+                                                    <div key={cIdx} style={{
+                                                        padding: "8px 12px",
+                                                        borderRadius: "6px",
+                                                        fontSize: "0.95rem",
+                                                        // Tô màu xanh nếu là đáp án đúng
+                                                        border: cIdx === q.answer ? "1px solid #10b981" : "1px solid #e2e8f0",
+                                                        background: cIdx === q.answer ? "#effdf5" : "#f8fafc",
+                                                        color: cIdx === q.answer ? "#15803d" : "#475569",
+                                                        display: "flex", alignItems: "center", justifyContent: "space-between"
+                                                    }}>
+                                                        <span>
+                                                            <strong style={{marginRight: "6px"}}>{String.fromCharCode(65+cIdx)}.</strong> 
+                                                            {c}
+                                                        </span>
+                                                        {cIdx === q.answer && <span>✅</span>}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div className="modal-actions" style={{marginTop: "15px", borderTop:"1px solid #eee", paddingTop:"10px"}}>
+                    <button className="action-btn" onClick={() => setViewingExam(null)}>Đóng</button>
+                </div>
+            </div>
+        </div>
+      )}
     </div>
   );
+  
 }

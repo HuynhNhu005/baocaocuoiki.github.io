@@ -4,6 +4,7 @@ import "./Admin.css";
 // --- SUB-COMPONENT: LỊCH SỬ THI ---
 const HistoryView = () => {
   const [history, setHistory] = useState([]);
+  const [viewingExam, setViewingExam] = useState(null); // State để mở Modal
   const token = localStorage.getItem("access_token");
 
   useEffect(() => {
@@ -21,34 +22,122 @@ const HistoryView = () => {
   return (
     <div style={{ padding: "20px" }}>
       <h3 style={{ borderBottom: "2px solid #fbbf24", paddingBottom: "10px", display: "inline-block" }}>📜 Lịch sử làm bài</h3>
+      
       {history.length === 0 ? (
         <p style={{ marginTop: "20px", color: "#666" }}>Bạn chưa thực hiện bài thi nào.</p>
       ) : (
-        <table className="modern-table" style={{ marginTop: "20px", width: "100%", borderCollapse: "collapse" }}>
-          <thead>
-            <tr style={{ background: "#f1f5f9", textAlign: "left" }}>
-              <th style={{ padding: "12px" }}>Ngày thi</th>
-              <th style={{ padding: "12px" }}>Số câu</th>
-              <th style={{ padding: "12px" }}>Điểm số</th>
-              <th style={{ padding: "12px" }}>Kết quả</th>
-            </tr>
-          </thead>
-          <tbody>
-            {history.map((h, index) => (
-              <tr key={index} style={{ borderBottom: "1px solid #e2e8f0" }}>
-                <td style={{ padding: "12px" }}>{new Date(h.created_at).toLocaleString('vi-VN')}</td>
-                <td style={{ padding: "12px" }}>{h.total_questions}</td>
-                <td style={{ padding: "12px", fontWeight: "bold", color: h.score >= 5 ? "#10b981" : "#ef4444" }}>{h.score.toFixed(1)} đ</td>
-                <td style={{ padding: "12px" }}>{h.correct_answers} đúng</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div style={{overflowX: "auto"}}>
+            <table className="modern-table" style={{ marginTop: "20px", width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+                <tr style={{ background: "#f1f5f9", textAlign: "left" }}>
+                <th style={{ padding: "12px" }}>Ngày thi</th>
+                <th style={{ padding: "12px" }}>Số câu</th>
+                <th style={{ padding: "12px" }}>Điểm số</th>
+                <th style={{ padding: "12px" }}>Kết quả</th>
+                </tr>
+            </thead>
+            <tbody>
+                {history.map((h, index) => (
+                <tr key={index} 
+                    style={{ borderBottom: "1px solid #e2e8f0", cursor: "pointer" }} 
+                    className="hover-row"
+                    onClick={() => setViewingExam(h)} // 👈 SỰ KIỆN CLICK Ở ĐÂY
+                    title="Nhấn để xem chi tiết"
+                >
+                    <td style={{ padding: "12px" }}>{new Date(h.created_at).toLocaleString('vi-VN')}</td>
+                    <td style={{ padding: "12px" }}>{h.total_questions}</td>
+                    <td style={{ padding: "12px", fontWeight: "bold", color: h.score >= 5 ? "#10b981" : "#ef4444" }}>{h.score.toFixed(1)} đ</td>
+                    <td style={{ padding: "12px" }}>{h.correct_answers} đúng</td>
+                </tr>
+                ))}
+            </tbody>
+            </table>
+            <p style={{marginTop:"10px", fontSize:"0.9rem", color:"#64748b", fontStyle:"italic"}}>* Nhấn vào dòng để xem lại chi tiết bài làm.</p>
+        </div>
+      )}
+
+      {/* --- MODAL HIỂN THỊ CHI TIẾT --- */}
+      {viewingExam && (
+        <div className="modal-overlay" onClick={() => setViewingExam(null)}>
+            <div className="modal-content" style={{maxWidth: "800px", width: "95%"}} onClick={e => e.stopPropagation()}>
+                <div style={{borderBottom: "1px solid #eee", paddingBottom: "15px", marginBottom: "15px", display:"flex", justifyContent:"space-between", alignItems:"center"}}>
+                    <div>
+                        <h3 style={{margin:0, color:"#2563eb"}}>🔍 Chi tiết bài làm</h3>
+                        <p style={{margin:"5px 0 0 0", color:"#64748b", fontSize:"0.9rem"}}>
+                            Ngày: {new Date(viewingExam.created_at).toLocaleString('vi-VN')} | 
+                            Điểm: <strong style={{color: viewingExam.score >= 5 ? "#10b981" : "#ef4444"}}>{viewingExam.score.toFixed(1)}</strong>
+                        </p>
+                    </div>
+                    <button style={{background:"transparent", border:"none", fontSize:"1.5rem", cursor:"pointer"}} onClick={() => setViewingExam(null)}>×</button>
+                </div>
+
+                <div style={{maxHeight: "65vh", overflowY: "auto", paddingRight: "5px"}}>
+                    {/* Kiểm tra dữ liệu chi tiết */}
+                    {!viewingExam.detail_history ? (
+                        <p style={{textAlign:"center", color:"#999", padding:"20px"}}>
+                           ⚠️ Không có dữ liệu chi tiết cho bài thi này (Có thể do bài thi cũ trước khi cập nhật tính năng).
+                        </p>
+                    ) : (
+                        viewingExam.detail_history.map((q, idx) => (
+                            <div key={idx} style={{marginBottom:"20px", padding:"15px", border:"1px solid #e2e8f0", borderRadius:"8px", background:"#fff"}}>
+                                {/* Tiêu đề câu hỏi */}
+                                <div style={{fontWeight:"bold", marginBottom:"10px", display:"flex", justifyContent:"space-between"}}>
+                                    <span>Câu {idx + 1}: {q.title}</span>
+                                    {q.is_correct 
+                                    ? <span style={{color:"#10b981", whiteSpace:"nowrap"}}>✅ Đúng</span> 
+                                    : <span style={{color:"#ef4444", whiteSpace:"nowrap"}}>❌ Sai</span>
+                                    }
+                                </div>
+                                
+                                {/* Danh sách đáp án - LOGIC TÔ MÀU */}
+                                <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10px"}}>
+                                    {(typeof q.choices === 'string' ? JSON.parse(q.choices) : q.choices).map((choice, cIdx) => {
+                                        let style = {padding:"8px", borderRadius:"5px", border:"1px solid #e2e8f0", fontSize:"0.95rem"};
+                                        let icon = "";
+
+                                        // Case 1: Đáp án ĐÚNG (Tô xanh)
+                                        if (cIdx === q.correct_answer) {
+                                            style = {...style, background:"#dcfce7", border:"1px solid #10b981", color:"#166534", fontWeight:"bold"};
+                                            icon = "✅";
+                                        }
+                                        // Case 2: Chọn SAI (Tô đỏ)
+                                        else if (cIdx === q.selected && !q.is_correct) {
+                                            style = {...style, background:"#fee2e2", border:"1px solid #ef4444", color:"#991b1b"};
+                                            icon = "❌ (Bạn chọn)";
+                                        }
+                                        // Case 3: Bình thường
+                                        else {
+                                            style = {...style, background:"#f8fafc", color:"#64748b"};
+                                        }
+
+                                        return (
+                                            <div key={cIdx} style={style}>
+                                                {String.fromCharCode(65+cIdx)}. {choice} {icon}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+
+                                {/* Giải thích */}
+                                {q.explanation && (
+                                    <div style={{marginTop:"10px", padding:"10px", background:"#fffbeb", borderLeft:"4px solid #f59e0b", fontSize:"0.9rem", color:"#b45309"}}>
+                                        <strong>💡 Giải thích:</strong> {q.explanation}
+                                    </div>
+                                )}
+                            </div>
+                        ))
+                    )}
+                </div>
+
+                <div className="modal-actions" style={{marginTop:"15px", borderTop:"1px solid #eee", paddingTop:"10px", textAlign:"right"}}>
+                    <button className="action-btn" onClick={() => setViewingExam(null)}>Đóng</button>
+                </div>
+            </div>
+        </div>
       )}
     </div>
   );
 };
-
 // --- SUB-COMPONENT: BẢNG XẾP HẠNG ---
 const LeaderboardView = () => {
   const [leaderboard, setLeaderboard] = useState([]);
@@ -208,11 +297,78 @@ export default function StudentDashboard({ onLogout }) {
   if (isTakingExam && currentExamData) {
       if (examResult) {
           return (
-              <div className="admin-container" style={{justifyContent:"center", alignItems:"center"}}>
-                  <div className="card" style={{textAlign:"center", padding:"40px", maxWidth:"500px"}}>
-                      <h2 style={{color: examResult.score >= 5 ? "#10b981" : "#ef4444"}}>🏁 Kết Quả: {examResult.score} điểm</h2>
-                      <p style={{fontSize:"1.2rem", margin:"10px 0"}}>Bạn trả lời đúng <strong>{examResult.correct}/{examResult.total}</strong> câu.</p>
-                      <button className="btn-add" style={{marginTop:"20px", width:"100%"}} onClick={() => {setIsTakingExam(false); setExamResult(null); fetchDashboardInfo();}}>⬅ Quay về Dashboard</button>
+              <div className="admin-container" style={{display:"block", padding:"20px", background:"#f8fafc", overflowY:"auto"}}>
+                  <div className="card" style={{maxWidth:"800px", margin:"0 auto"}}>
+                      {/* 1. Phần Tổng kết điểm */}
+                      <div style={{textAlign:"center", borderBottom:"1px solid #eee", paddingBottom:"20px", marginBottom:"20px"}}>
+                          <h2 style={{color: examResult.score >= 5 ? "#10b981" : "#ef4444", fontSize:"2.5rem", margin:"0"}}>
+                              {examResult.score.toFixed(1)} điểm
+                          </h2>
+                          <p style={{fontSize:"1.1rem", color:"#64748b", marginTop:"10px"}}>
+                              Bạn làm đúng <strong>{examResult.correct}/{examResult.total}</strong> câu.
+                          </p>
+                      </div>
+
+                      {/* 2. Phần Xem lại chi tiết từng câu */}
+                      <div className="review-list">
+                          <h3 style={{marginBottom: "15px"}}>🔍 Xem lại bài làm:</h3>
+                          {examResult.details?.map((q, idx) => (
+                              <div key={idx} style={{marginBottom:"20px", padding:"15px", border:"1px solid #e2e8f0", borderRadius:"8px", background:"#fff"}}>
+                                  {/* Tiêu đề câu hỏi */}
+                                  <div style={{fontWeight:"bold", marginBottom:"10px", display:"flex", justifyContent:"space-between"}}>
+                                      <span>Câu {idx + 1}: {q.title}</span>
+                                      {q.is_correct 
+                                        ? <span style={{color:"#10b981", whiteSpace:"nowrap"}}>✅ Đúng</span> 
+                                        : <span style={{color:"#ef4444", whiteSpace:"nowrap"}}>❌ Sai</span>
+                                      }
+                                  </div>
+                                  
+                                  {/* Danh sách đáp án */}
+                                  <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10px"}}>
+                                      {(typeof q.choices === 'string' ? JSON.parse(q.choices) : q.choices).map((choice, cIdx) => {
+                                          // Logic tô màu
+                                          let style = {padding:"8px", borderRadius:"5px", border:"1px solid #e2e8f0", fontSize:"0.95rem"};
+                                          let icon = "";
+
+                                          // Case 1: Đây là đáp án ĐÚNG (luôn tô xanh)
+                                          if (cIdx === q.correct_answer) {
+                                              style = {...style, background:"#dcfce7", border:"1px solid #10b981", color:"#166534", fontWeight:"bold"};
+                                              icon = "✅";
+                                          }
+                                          // Case 2: User chọn SAI vào ô này (tô đỏ)
+                                          else if (cIdx === q.selected && !q.is_correct) {
+                                              style = {...style, background:"#fee2e2", border:"1px solid #ef4444", color:"#991b1b"};
+                                              icon = "❌ (Bạn chọn)";
+                                          }
+                                          // Case 3: Các đáp án thường
+                                          else {
+                                              style = {...style, background:"#f8fafc", color:"#64748b"};
+                                          }
+
+                                          return (
+                                              <div key={cIdx} style={style}>
+                                                  {String.fromCharCode(65+cIdx)}. {choice} {icon}
+                                              </div>
+                                          );
+                                      })}
+                                  </div>
+
+                                  {/* Giải thích (nếu có) */}
+                                  {q.explanation && (
+                                      <div style={{marginTop:"10px", padding:"10px", background:"#fffbeb", borderLeft:"4px solid #f59e0b", fontSize:"0.9rem", color:"#b45309"}}>
+                                          <strong>💡 Giải thích:</strong> {q.explanation}
+                                      </div>
+                                  )}
+                              </div>
+                          ))}
+                      </div>
+
+                      {/* 3. Nút quay về */}
+                      <div style={{marginTop:"20px", textAlign:"center"}}>
+                          <button className="btn-add" style={{width:"200px", padding:"12px"}} onClick={() => {setIsTakingExam(false); setExamResult(null); fetchDashboardInfo();}}>
+                              ⬅ Quay về Dashboard
+                          </button>
+                      </div>
                   </div>
               </div>
           )
@@ -280,7 +436,7 @@ export default function StudentDashboard({ onLogout }) {
         <button className={`nav-item ${activeTab==="history"?"active":""}`} onClick={()=>setActiveTab("history")}><IconHistory /> Lịch sử thi</button>
         <button className={`nav-item ${activeTab==="leaderboard"?"active":""}`} onClick={()=>setActiveTab("leaderboard")}><IconTrophy /> Bảng xếp hạng</button>
         
-        <button className="nav-item logout" onClick={onLogout}>🚪 Đăng xuất</button>
+        
       </div>
 
       {/* MAIN CONTENT */}
