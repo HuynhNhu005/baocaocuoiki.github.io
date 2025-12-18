@@ -19,15 +19,15 @@
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            background: #111; /* Màu nền tối */
+            background: #111;
             color: #fff;
         }
 
-        /* Hiệu ứng viền Neon xoay */
+        /* --- BOX CONTAINER --- */
         .box {
             position: relative;
             width: 380px;
-            height: 420px;
+            height: 420px; /* Chiều cao mặc định cho Login */
             background: #1c1c1c;
             border-radius: 8px;
             overflow: hidden;
@@ -35,50 +35,43 @@
             justify-content: center;
             align-items: center;
             flex-direction: column;
+            transition: height 0.3s ease; /* Hiệu ứng co giãn mượt mà */
         }
 
+        /* Hiệu ứng viền Neon */
         .box::before {
             content: '';
             position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 380px;
-            height: 420px;
+            top: -50%; left: -50%; width: 380px; height: 420px;
             background: linear-gradient(0deg, transparent, transparent, #45f3ff, #45f3ff, #45f3ff);
-            z-index: 1;
-            transform-origin: bottom right;
+            z-index: 1; transform-origin: bottom right;
             animation: animate 6s linear infinite;
         }
-
         .box::after {
             content: '';
             position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 380px;
-            height: 420px;
+            top: -50%; left: -50%; width: 380px; height: 420px;
             background: linear-gradient(0deg, transparent, transparent, #ff2770, #ff2770, #ff2770);
-            z-index: 1;
-            transform-origin: bottom right;
-            animation: animate 6s linear infinite;
-            animation-delay: -3s; /* Chạy lệch pha để tạo màu đối lập */
+            z-index: 1; transform-origin: bottom right;
+            animation: animate 6s linear infinite; animation-delay: -3s;
         }
-
         @keyframes animate {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
 
-        /* Lớp phủ đè lên viền để tạo khoảng trống ở giữa */
+        /* --- FORM CONTAINER --- */
         .form-container {
             position: absolute;
-            inset: 4px; /* Độ dày viền */
+            inset: 4px; 
             background: #222;
-            padding: 50px 40px;
+            padding: 40px; /* Padding chuẩn */
             border-radius: 8px;
             z-index: 2;
             display: flex;
             flex-direction: column;
+            width: calc(100% - 8px); /* Đảm bảo form nằm gọn trong viền */
+            height: calc(100% - 8px);
         }
 
         h2 {
@@ -86,121 +79,55 @@
             font-weight: 500;
             text-align: center;
             letter-spacing: 0.1em;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
         }
 
         /* Input styling */
-        .inputBox {
-            position: relative;
-            width: 100%;
-            margin-top: 35px;
-        }
-
+        .inputBox { position: relative; width: 100%; margin-top: 30px; }
         .inputBox input {
-            position: relative;
-            width: 100%;
-            padding: 20px 10px 10px;
-            background: transparent;
-            outline: none;
-            border: none;
-            box-shadow: none;
-            color: #23242a;
-            font-size: 1em;
-            letter-spacing: 0.05em;
-            transition: 0.5s;
-            z-index: 10;
+            position: relative; width: 100%; padding: 20px 10px 10px;
+            background: transparent; outline: none; border: none; box-shadow: none;
+            color: #23242a; font-size: 1em; letter-spacing: 0.05em;
+            transition: 0.5s; z-index: 10;
         }
-
         .inputBox span {
-            position: absolute;
-            left: 0;
-            padding: 20px 0px 10px;
-            pointer-events: none;
-            color: #8f8f8f;
-            font-size: 1em;
-            letter-spacing: 0.05em;
-            transition: 0.5s;
+            position: absolute; left: 0; padding: 20px 0px 10px;
+            pointer-events: none; color: #8f8f8f; font-size: 1em;
+            letter-spacing: 0.05em; transition: 0.5s;
         }
-
-        /* Hiệu ứng khi focus vào input */
         .inputBox input:valid ~ span,
         .inputBox input:focus ~ span {
-            color: #fff;
-            font-size: 0.75em;
-            transform: translateY(-34px);
+            color: #fff; font-size: 0.75em; transform: translateY(-34px);
         }
-
         .inputBox i {
-            position: absolute;
-            left: 0;
-            bottom: 0;
-            width: 100%;
-            height: 2px;
-            background: #fff;
-            border-radius: 4px;
-            overflow: hidden;
-            transition: 0.5s;
-            pointer-events: none;
+            position: absolute; left: 0; bottom: 0; width: 100%; height: 2px;
+            background: #fff; border-radius: 4px; overflow: hidden;
+            transition: 0.5s; pointer-events: none;
         }
-
         .inputBox input:valid ~ i,
-        .inputBox input:focus ~ i {
-            height: 44px; /* Tô nền input khi nhập */
-        }
+        .inputBox input:focus ~ i { height: 44px; }
 
-        /* Button styling */
-        .links {
-            display: flex;
-            justify-content: space-between;
-        }
+        /* Button & Link styling */
+        .links { display: flex; justify-content: space-between; margin-top: 10px;}
+        .links a { margin: 10px 0; font-size: 0.75em; color: #8f8f8f; text-decoration: none; cursor: pointer; }
+        .links a:hover { color: #fff; }
 
-        .links a {
-            margin: 10px 0;
-            font-size: 0.75em;
-            color: #8f8f8f;
-            text-decoration: none;
-            cursor: pointer;
-        }
-
-        .links a:hover,
-        .links a:nth-child(2) {
-            color: #fff;
-        }
-
-        input[type="submit"], button.submit-btn {
-            border: none;
-            outline: none;
+        button.submit-btn {
+            border: none; outline: none;
             background: linear-gradient(45deg, #ff357a, #fff172);
-            padding: 11px 25px;
-            width: 100%;
-            margin-top: 10px;
-            border-radius: 4px;
-            font-weight: 600;
-            cursor: pointer;
-            font-size: 0.9em;
+            padding: 11px 25px; width: 100%; margin-top: 20px;
+            border-radius: 4px; font-weight: 600; cursor: pointer; font-size: 0.9em;
         }
+        button.submit-btn:active { opacity: 0.8; }
 
-        input[type="submit"]:active, button.submit-btn:active {
-            opacity: 0.8;
-        }
-
-        /* Ẩn hiện form */
-        .hidden {
-            display: none;
-        }
-        
-        #error-msg {
-            color: #ff357a;
-            font-size: 0.8em;
-            text-align: center;
-            margin-top: 10px;
-            min-height: 1.2em;
-        }
+        .hidden { display: none; }
+        #error-msg { color: #ff357a; font-size: 0.8em; text-align: center; margin-top: 10px; min-height: 1.2em; }
     </style>
 </head>
 <body>
 
     <div class="box">
+        
         <div class="form-container" id="login-form">
             <h2>Sign In</h2>
             <div class="inputBox">
@@ -214,8 +141,8 @@
                 <i></i>
             </div>
             <div class="links">
-                <a onclick="alert('Chức năng này cần Server gửi Email (Chưa làm)')">Forgot Password</a>
-                <a onclick="toggleForm()">Signup</a>
+                <a onclick="showForgot()">Forgot Password?</a>
+                <a onclick="showRegister()">Signup</a>
             </div>
             <div id="error-msg"></div>
             <button class="submit-btn" onclick="handleLogin()">Login</button>
@@ -224,110 +151,136 @@
         <div class="form-container hidden" id="register-form">
             <h2>Sign Up</h2>
             <div class="inputBox">
-                <input type="text" id="reg-user" required="required">
+                <input type="text" id="reg-user" required>
                 <span>Username</span>
                 <i></i>
             </div>
             <div class="inputBox">
-                <input type="text" id="reg-fullname" required="required">
+                <input type="text" id="reg-fullname" required>
                 <span>Full Name</span>
                 <i></i>
             </div>
             <div class="inputBox">
-        <input type="email" id="reg-email" required>
-        <span>Email (Gmail)</span>
-        <i></i>
-    </div>
-
-    <div class="inputBox">
-        <input type="tel" id="reg-phone" required>
-        <span>Phone Number</span>
-        <i></i>
-    </div>
+                <input type="email" id="reg-email" required>
+                <span>Email (Gmail)</span>
+                <i></i>
+            </div>
             <div class="inputBox">
-                <input type="password" id="reg-pass" required="required">
+                <input type="tel" id="reg-phone" required>
+                <span>Phone Number</span>
+                <i></i>
+            </div>
+            <div class="inputBox">
+                <input type="password" id="reg-pass" required>
                 <span>Password</span>
                 <i></i>
             </div>
             <div class="links">
-                <a onclick="toggleForm()">Back to Sign In</a>
+                <a onclick="showLogin()">Back to Sign In</a>
             </div>
             <button class="submit-btn" style="background: linear-gradient(45deg, #45f3ff, #fff);" onclick="handleRegister()">Register</button>
         </div>
+
+        <div class="form-container hidden" id="forgot-form">
+            <h2 style="color: #45f3ff;">Reset Password</h2>
+            <p style="font-size: 0.8rem; color: #ccc; text-align: center;">Nhập thông tin xác thực để đặt lại mật khẩu mới.</p>
+            
+            <div class="inputBox">
+                <input type="text" id="forgot-user" required>
+                <span>Username</span>
+                <i></i>
+            </div>
+            <div class="inputBox">
+                <input type="email" id="forgot-email" required>
+                <span>Email (đã đăng ký)</span>
+                <i></i>
+            </div>
+            <div class="inputBox">
+                <input type="password" id="forgot-newpass" required>
+                <span>New Password</span>
+                <i></i>
+            </div>
+
+            <div class="links" style="justify-content: center;">
+                <a onclick="showLogin()">Back to Login</a>
+            </div>
+            <button class="submit-btn" style="background: linear-gradient(45deg, #00ff87, #60efff);" onclick="handleForgotPassword()">Reset Now</button>
+        </div>
+
     </div>
 
     <script>
-        const API_URL = "http://localhost:8000/api"; // URL Backend của bạn
+        const API_URL = "http://localhost:8000/api"; 
 
-        // Hàm chuyển đổi giữa Đăng nhập và Đăng ký
-        function toggleForm() {
-            const loginForm = document.getElementById('login-form');
-            const regForm = document.getElementById('register-form');
-            const box = document.querySelector('.box');
-
-            if (loginForm.classList.contains('hidden')) {
-                loginForm.classList.remove('hidden');
-                regForm.classList.add('hidden');
-                // Đổi màu viền về mặc định
-                document.querySelector('.box').style.height = "420px";
-            } else {
-                loginForm.classList.add('hidden');
-                regForm.classList.remove('hidden');
-                // Tăng chiều cao box chút xíu vì form đăng ký dài hơn
-                document.querySelector('.box').style.height = "750px";
-            }
+        // --- HÀM ĐIỀU HƯỚNG FORM ---
+        function showLogin() {
+            document.getElementById('login-form').classList.remove('hidden');
+            document.getElementById('register-form').classList.add('hidden');
+            document.getElementById('forgot-form').classList.add('hidden');
+            document.querySelector('.box').style.height = "420px";
         }
 
-        // Xử lý ĐĂNG NHẬP
+        function showRegister() {
+            document.getElementById('login-form').classList.add('hidden');
+            document.getElementById('register-form').classList.remove('hidden');
+            document.getElementById('forgot-form').classList.add('hidden');
+            document.querySelector('.box').style.height = "750px"; // Cao hơn cho form đăng ký
+        }
+
+        function showForgot() {
+            document.getElementById('login-form').classList.add('hidden');
+            document.getElementById('register-form').classList.add('hidden');
+            document.getElementById('forgot-form').classList.remove('hidden');
+            document.querySelector('.box').style.height = "520px"; // Vừa đủ cho form reset
+        }
+
+        // --- 1. LOGIN ---
         async function handleLogin() {
-        const username = document.getElementById('login-user').value;
-        const password = document.getElementById('login-pass').value;
-        const errorDiv = document.getElementById('error-msg');
+            const username = document.getElementById('login-user').value;
+            const password = document.getElementById('login-pass').value;
+            const errorDiv = document.getElementById('error-msg');
 
-        if(!username || !password) {
-            errorDiv.innerText = "Vui lòng nhập đầy đủ thông tin!";
-            return;
-        }
-
-        try {
-            const response = await fetch(`${API_URL}/login`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password })
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                
-                // --- CẬP NHẬT MỚI: LƯU ROLE VÀO LOCALSTORAGE ---
-                localStorage.setItem('access_token', data.access_token);
-                localStorage.setItem('username', data.username);
-                localStorage.setItem('role', data.role); // <--- QUAN TRỌNG: Lưu quyền hạn
-                // LƯU THÊM THÔNG TIN MỚI
-            localStorage.setItem('email', data.email || ""); 
-            localStorage.setItem('phone', data.phone_number || "");
-                
-                alert(`Đăng nhập thành công! Xin chào ${data.role === 'admin' ? 'Quản trị viên' : 'Bạn'} ${data.username}`);
-                window.location.href = "/"; 
-            } else {
-                errorDiv.innerText = "Sai tên đăng nhập hoặc mật khẩu!";
+            if(!username || !password) {
+                errorDiv.innerText = "Vui lòng nhập đầy đủ thông tin!";
+                return;
             }
-        } catch (error) {
-            console.error(error);
-            errorDiv.innerText = "Lỗi kết nối Server!";
-        }
-    }
 
-        // Xử lý ĐĂNG KÝ
+            try {
+                const response = await fetch(`${API_URL}/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    localStorage.setItem('access_token', data.access_token);
+                    localStorage.setItem('username', data.username);
+                    localStorage.setItem('role', data.role);
+                    localStorage.setItem('email', data.email || ""); 
+                    localStorage.setItem('phone', data.phone_number || "");
+                    
+                    alert(`Đăng nhập thành công! Xin chào ${data.role === 'admin' ? 'Quản trị viên' : 'Bạn'} ${data.username}`);
+                    window.location.href = "/"; 
+                } else {
+                    errorDiv.innerText = "Sai tên đăng nhập hoặc mật khẩu!";
+                }
+            } catch (error) {
+                console.error(error);
+                errorDiv.innerText = "Lỗi kết nối Server!";
+            }
+        }
+
+        // --- 2. REGISTER ---
         async function handleRegister() {
             const username = document.getElementById('reg-user').value;
             const fullname = document.getElementById('reg-fullname').value;
-            const email = document.getElementById('reg-email').value;       // <--- Lấy giá trị
-        const phone = document.getElementById('reg-phone').value;       // <--- Lấy giá trị
+            const email = document.getElementById('reg-email').value;
+            const phone = document.getElementById('reg-phone').value;
             const password = document.getElementById('reg-pass').value;
 
-            if(!username || !password) {
-                alert("Vui lòng nhập đầy đủ thông tin!");
+            if(!username || !password || !email) {
+                alert("Vui lòng nhập đầy đủ thông tin (đặc biệt là Email)!");
                 return;
             }
 
@@ -339,20 +292,55 @@
                         username: username, 
                         password: password,
                         full_name: fullname,
-                        email: email,           // <--- Gửi lên server
-                    phone_number: phone     // <--- Gửi lên server 
+                        email: email,
+                        phone_number: phone
                     })
                 });
 
                 if (response.ok) {
                     alert("Đăng ký thành công! Hãy đăng nhập ngay.");
-                    toggleForm(); // Quay về màn hình login
+                    showLogin();
                 } else {
                     const data = await response.json();
                     alert("Lỗi: " + (data.detail || "Đăng ký thất bại"));
                 }
             } catch (error) {
                 alert("Lỗi kết nối Server!");
+            }
+        }
+
+        // --- 3. FORGOT PASSWORD (MỚI) ---
+        async function handleForgotPassword() {
+            const username = document.getElementById('forgot-user').value;
+            const email = document.getElementById('forgot-email').value;
+            const newPassword = document.getElementById('forgot-newpass').value;
+
+            if(!username || !email || !newPassword) {
+                alert("Vui lòng nhập đầy đủ Username, Email và Mật khẩu mới!");
+                return;
+            }
+
+            try {
+                // Gọi API reset mật khẩu
+                const response = await fetch(`${API_URL}/forgot-password`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        username: username, 
+                        email: email,
+                        new_password: newPassword 
+                    })
+                });
+
+                if (response.ok) {
+                    alert("✅ Đổi mật khẩu thành công! Bạn có thể đăng nhập bằng mật khẩu mới.");
+                    showLogin(); // Quay về trang đăng nhập
+                } else {
+                    const data = await response.json();
+                    alert("❌ Lỗi: " + (data.detail || "Không thể đặt lại mật khẩu. Kiểm tra lại thông tin."));
+                }
+            } catch (error) {
+                alert("❌ Lỗi kết nối Server!");
             }
         }
     </script>

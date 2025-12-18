@@ -403,3 +403,63 @@ async def get_exam_details(
         "questions": questions_list,
         "max_attempts": exam.max_attempts
     }
+# API Quên mật khẩu
+@app.post(settings.API_PREFIX + "/forgot-password")
+async def forgot_password(
+    payload: schemas.ForgotPasswordRequest, 
+    db: AsyncSession = Depends(get_db)
+):
+    # 1. Tìm user khớp cả Username và Email
+    stmt = select(models.User).where(
+        models.User.username == payload.username,
+        models.User.email == payload.email
+    )
+    result = await db.execute(stmt)
+    user = result.scalars().first()
+
+    if not user:
+        # Bảo mật: Không nên báo cụ thể sai username hay email
+        raise HTTPException(status_code=404, detail="Thông tin không chính xác hoặc tài khoản không tồn tại.")
+
+    # 2. Mã hóa mật khẩu mới
+    hashed_new_pw = auth.get_password_hash(payload.new_password)
+    
+    # 3. Cập nhật vào DB
+    user.password_hash = hashed_new_pw
+    await db.commit()
+
+    return {"status": "success", "message": "Đổi mật khẩu thành công! Hãy đăng nhập lại."}
+# --- 6. API MỚI: QUẢN LÝ ĐỀ THI CHO ADMIN ---
+from sqlalchemy.orm import selectinload
+
+@app.get(settings.API_PREFIX + "/admin/classes-with-exams")
+async def get_classes_with_exams_route(
+    db: AsyncSession = Depends(get_db), 
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    if current_user.role != "admin": 
+        raise HTTPException(status_code=403, detail="Không có quyền truy cập")
+    
+    # Lấy tất cả lớp, nạp sẵn (eager load) danh sách đề thi (exams)
+    stmt = select(models.Class).options(selectinload(models.Class.exams)).order_by(models.Class.id.desc())
+    res = await db.execute(stmt)
+    classes = res.scalars().all()
+    
+    # Chế biến dữ liệu trả về gọn gàng
+    result = []
+    for cls in classes:
+        result.append({
+            "id": cls.id,
+            "name": cls.name,
+            "code": cls.code,
+            "teacher_id": cls.teacher_id,
+            "exam_count": len(cls.exams), # Đếm số lượng đề
+            "exams": [{
+                "id": ex.id,
+                "title": ex.title,
+                "created_at": ex.created_at,
+                "duration": ex.duration,
+                "max_attempts": ex.max_attempts
+            } for ex in cls.exams] # Lấy danh sách đề
+        })
+    return result

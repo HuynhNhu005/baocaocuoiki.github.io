@@ -7,6 +7,10 @@ export default function AdminDashboard({ onBack }) {
   const [questions, setQuestions] = useState([]);
   const [users, setUsers] = useState([]);
   const [classes, setClasses] = useState([]); // <--- STATE MỚI: DANH SÁCH LỚP
+  // STATE MỚI CHO QUẢN LÝ ĐỀ THI
+  const [examClasses, setExamClasses] = useState([]); // Danh sách lớp kèm đề thi
+  const [selectedClassExams, setSelectedClassExams] = useState(null); // Lớp đang xem đề
+  const [viewingExamDetail, setViewingExamDetail] = useState(null); // Chi tiết đề thi đang xem
 
   // State cho Modal
   const [editingQuestion, setEditingQuestion] = useState(null); 
@@ -19,29 +23,28 @@ export default function AdminDashboard({ onBack }) {
 
   const token = localStorage.getItem("access_token");
 
-  // --- 1. HÀM TẢI DỮ LIỆU THÔNG MINH (MỚI) ---
+  // --- 1. HÀM TẢI DỮ LIỆU THÔNG MINH ---
   const reloadData = async () => {
-      // Tải lại danh sách lớp mới nhất
-      const res = await fetch(`http://localhost:8000/api/admin/classes`, {
-          headers: { Authorization: `Bearer ${token}` }
-      });
+      // 1. Tải danh sách lớp
+      const res = await fetch(`http://localhost:8000/api/admin/classes`, { headers: { Authorization: `Bearer ${token}` } });
       if (res.ok) {
           const newClasses = await res.json();
           setClasses(newClasses);
-
-          // Nếu đang mở Modal lớp nào, cập nhật luôn dữ liệu cho Modal đó
+          // Cập nhật lại modal lớp nếu đang mở
           if (selectedClass) {
               const updatedClass = newClasses.find(c => c.id === selectedClass.id);
               if (updatedClass) setSelectedClass(updatedClass);
           }
       }
       
-      // Tải lại user để lấy danh sách mới nhất (ví dụ cập nhật role teacher)
-      if (activeTab === "users" || activeTab === "classes") {
-           const uRes = await fetch(`http://localhost:8000/api/admin/users`, {
-               headers: { Authorization: `Bearer ${token}` }
-           });
-           if(uRes.ok) setUsers(await uRes.json());
+      // 2. Tải danh sách User
+      const uRes = await fetch(`http://localhost:8000/api/admin/users`, { headers: { Authorization: `Bearer ${token}` } });
+      if(uRes.ok) setUsers(await uRes.json());
+
+      // 3. Tải danh sách Đề thi (MỚI THÊM)
+      if (activeTab === "exam-manager") {
+          const eRes = await fetch(`http://localhost:8000/api/admin/classes-with-exams`, { headers: { Authorization: `Bearer ${token}` } });
+          if(eRes.ok) setExamClasses(await eRes.json());
       }
   };
   // --- API CALLS ---
@@ -61,6 +64,7 @@ export default function AdminDashboard({ onBack }) {
     if (activeTab === "classes") {
         reloadData();
     }
+    if (activeTab === "exam-manager") reloadData();
   }, [activeTab]);
 
   const fetchUserHistory = async (userId) => {
@@ -69,7 +73,26 @@ export default function AdminDashboard({ onBack }) {
     });
     if (res.ok) setSelectedUserHistory(await res.json());
   };
-
+// HÀM MỚI: XEM CHI TIẾT ĐỀ THI
+  const handleViewExamDetail = async (examId) => {
+    try {
+        const res = await fetch(`http://localhost:8000/api/student/exams/${examId}`, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.ok) {
+            const data = await res.json();
+            const processedQuestions = data.questions.map(q => ({
+                ...q,
+                choices: typeof q.choices === 'string' ? JSON.parse(q.choices) : q.choices
+            }));
+            setViewingExamDetail({ ...data.exam, questions: processedQuestions });
+        } else {
+            alert("Không tải được chi tiết đề!");
+        }
+    } catch (e) {
+        alert("Lỗi kết nối!");
+    }
+  };
   // --- HANDLERS CƠ BẢN ---
   const handleDelete = async (id) => {
     if (!confirm("⚠️ Hành động này không thể hoàn tác! Bạn chắc chắn muốn xóa?")) return;
@@ -234,6 +257,7 @@ export default function AdminDashboard({ onBack }) {
       <div className="sidebar">
         <div className="brand"><span style={{fontSize:"1.8rem"}}>⚡</span> Quiz Admin</div>
         <button className={`nav-item ${activeTab==="stats"?"active":""}`} onClick={() => setActiveTab("stats")}><IconStats /> Thống kê</button>
+        <button className={`nav-item ${activeTab==="exam-manager"?"active":""}`} onClick={() => setActiveTab("exam-manager")}>📝 Quản lý Đề thi</button>
         <button className={`nav-item ${activeTab==="questions"?"active":""}`} onClick={() => setActiveTab("questions")}><IconQues /> Ngân hàng câu hỏi</button>
         <button className={`nav-item ${activeTab==="classes"?"active":""}`} onClick={() => setActiveTab("classes")}><IconClass /> Quản lý Lớp học</button> {/* <-- MỚI */}
         <button className={`nav-item ${activeTab==="users"?"active":""}`} onClick={() => setActiveTab("users")}><IconUser /> Người dùng</button>
@@ -250,12 +274,45 @@ export default function AdminDashboard({ onBack }) {
           </div>
         </div>
 
-        {/* TAB: STATS */}
+        {/* TAB: STATS (CLICK ĐỂ CHUYỂN TAB - GIAO DIỆN GỌN) */}
         {activeTab === "stats" && (
           <div className="stats-grid">
-            <div className="stat-card" style={{ borderLeft: "5px solid #0284c7" }}><div className="stat-info"><h3>{stats.users}</h3><p>Người dùng</p></div></div>
-            <div className="stat-card" style={{ borderLeft: "5px solid #16a34a" }}><div className="stat-info"><h3>{stats.questions}</h3><p>Câu hỏi</p></div></div>
-            <div className="stat-card" style={{ borderLeft: "5px solid #9333ea" }}><div className="stat-info"><h3>{stats.exams}</h3><p>Lượt thi</p></div></div>
+            
+            {/* 1. Thẻ Người dùng */}
+            <div 
+                className="stat-card" 
+                style={{ borderLeft: "5px solid #0284c7", cursor: "pointer", transition: "transform 0.2s" }} 
+                onClick={() => setActiveTab("users")}
+                title="Đến trang Quản lý người dùng"
+            >
+                <div className="stat-info"><h3>{stats.users}</h3><p>Người dùng</p></div>
+            </div>
+
+            {/* 2. Thẻ Câu hỏi */}
+            <div 
+                className="stat-card" 
+                style={{ borderLeft: "5px solid #16a34a", cursor: "pointer", transition: "transform 0.2s" }} 
+                onClick={() => setActiveTab("questions")}
+                title="Đến trang Ngân hàng câu hỏi"
+            >
+                <div className="stat-info"><h3>{stats.questions}</h3><p>Câu hỏi</p></div>
+            </div>
+            {/* 3. Thẻ Lượt thi -> Dẫn sang trang Quản lý Đề thi mới */}
+            <div 
+                className="stat-card" 
+                style={{ borderLeft: "5px solid #9333ea", cursor: "pointer", transition: "transform 0.2s" }} 
+                onClick={() => setActiveTab("exam-manager")} 
+                title="Bấm để xem danh sách đề thi"
+            >
+                <div className="stat-info">
+                    <h3>{stats.exams}</h3>
+                    <p>Đề thi (Quản lý)</p> {/* Đổi tên cho rõ nghĩa hơn */}
+                </div>
+                <small style={{color: "#9333ea", fontWeight: "bold", marginTop: "5px", display: "block"}}>Bấm để xem chi tiết ➝</small>
+            </div>
+
+            
+        
           </div>
         )}
 
@@ -339,6 +396,49 @@ export default function AdminDashboard({ onBack }) {
                         <button className="action-btn delete" onClick={() => handleDeleteUser(u.id, u.username)} title="Xóa">🗑️</button>
                         <button className="btn-history" onClick={() => fetchUserHistory(u.id)}>👁️ Xem Lịch sử</button>
                       </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        {/* --- BỔ SUNG: TAB QUẢN LÝ ĐỀ THI (EXAM MANAGER) --- */}
+        {activeTab === "exam-manager" && (
+          <div className="table-card">
+            <div className="table-header">
+              <h3>Danh sách Lớp & Đề thi ({examClasses.length})</h3>
+            </div>
+            <table className="modern-table">
+              <thead>
+                <tr>
+                  <th>Mã lớp</th>
+                  <th>Tên lớp</th>
+                  <th>Số lượng đề</th>
+                  <th>Hành động</th>
+                </tr>
+              </thead>
+              <tbody>
+                {examClasses.map((c) => (
+                  <tr key={c.id}>
+                    <td style={{ fontWeight: "bold", color: "#6366f1" }}>{c.code}</td>
+                    <td>{c.name}</td>
+                    <td>
+                      {c.exams && c.exams.length > 0 ? (
+                        <span className="badge" style={{ background: "#dcfce7", color: "#166534" }}>
+                          {c.exams.length} đề thi
+                        </span>
+                      ) : (
+                        <span style={{ color: "#94a3b8" }}>Chưa có đề</span>
+                      )}
+                    </td>
+                    <td>
+                      <button 
+                        className="btn-history" 
+                        onClick={() => setSelectedClassExams(c)}
+                      >
+                        📂 Quản lý Đề thi
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -501,6 +601,65 @@ export default function AdminDashboard({ onBack }) {
            </div>
         </div>
       )}
+      {/* 1. MODAL XEM DANH SÁCH ĐỀ THI CỦA LỚP */}
+      {selectedClassExams && (
+          <div className="modal-overlay" onClick={() => setSelectedClassExams(null)}>
+              <div className="modal-content" onClick={e => e.stopPropagation()}>
+                  <h3>📝 Đề thi lớp: {selectedClassExams.name}</h3>
+                  {selectedClassExams.exams.length === 0 ? (
+                      <p style={{padding:"20px", textAlign:"center", color:"#64748b"}}>Lớp này chưa có đề thi nào.</p>
+                  ) : (
+                      <table className="modern-table" style={{marginTop:"15px"}}>
+                          <thead><tr><th>ID</th><th>Tên bài thi</th><th>Thời gian</th><th>Ngày tạo</th><th>Chi tiết</th></tr></thead>
+                          <tbody>
+                              {selectedClassExams.exams.map(ex => (
+                                  <tr key={ex.id}>
+                                      <td>#{ex.id}</td>
+                                      <td style={{fontWeight:"bold", color:"#2563eb"}}>{ex.title}</td>
+                                      <td>{ex.duration} phút</td>
+                                      <td>{new Date(ex.created_at).toLocaleString('vi-VN')}</td>
+                                      <td>
+                                          <button className="btn-history" onClick={() => handleViewExamDetail(ex.id)}>👁️ Xem chi tiết</button>
+                                      </td>
+                                  </tr>
+                              ))}
+                          </tbody>
+                      </table>
+                  )}
+                  <div className="modal-actions"><button className="action-btn" onClick={() => setSelectedClassExams(null)}>Đóng</button></div>
+              </div>
+          </div>
+      )}
+
+      {/* 2. MODAL XEM CHI TIẾT NỘI DUNG CÂU HỎI */}
+      {viewingExamDetail && (
+          <div className="modal-overlay" style={{zIndex: 1100}} onClick={() => setViewingExamDetail(null)}>
+              <div className="modal-content" style={{maxWidth:"900px"}} onClick={e => e.stopPropagation()}>
+                  <h3 style={{borderBottom:"1px solid #eee", paddingBottom:"10px"}}>📄 Nội dung đề: {viewingExamDetail.title}</h3>
+                  <div style={{maxHeight:"60vh", overflowY:"auto"}}>
+                      {viewingExamDetail.questions.map((q, idx) => (
+                          <div key={idx} style={{background:"#f8fafc", padding:"15px", marginBottom:"15px", borderRadius:"8px", border:"1px solid #e2e8f0"}}>
+                              <div style={{fontWeight:"bold", marginBottom:"10px"}}>Câu {idx+1}: {q.title}</div>
+                              <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10px"}}>
+                                  {q.choices.map((c, cIdx) => (
+                                      <div key={cIdx} style={{
+                                          padding:"8px", borderRadius:"6px", border:"1px solid #cbd5e1",
+                                          background: cIdx === q.answer ? "#dcfce7" : "#fff",
+                                          color: cIdx === q.answer ? "#166534" : "#334155",
+                                          fontWeight: cIdx === q.answer ? "bold" : "normal"
+                                      }}>
+                                          {String.fromCharCode(65+cIdx)}. {c} {cIdx === q.answer && "✅"}
+                                      </div>
+                                  ))}
+                              </div>
+                          </div>
+                      ))}
+                  </div>
+                  <div className="modal-actions"><button className="action-btn" onClick={() => setViewingExamDetail(null)}>Đóng</button></div>
+              </div>
+          </div>
+      )}
     </div>
+    
   );
 }

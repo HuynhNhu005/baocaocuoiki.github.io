@@ -87,3 +87,8 @@ class ClassOut(ClassBase):
 # Schema để thêm học sinh vào lớp
 class AddStudentToClass(BaseModel):
     student_username: str  # Admin nhập username để thêm
+# --- FORGOT PASSWORD SCHEMA ---
+class ForgotPasswordRequest(BaseModel):
+    username: str
+    email: str
+    new_password: str
