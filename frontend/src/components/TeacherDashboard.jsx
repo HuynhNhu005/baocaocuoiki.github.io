@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import "./Admin.css"; 
+import "./Teacher.css";
 
 export default function TeacherDashboard({ onLogout }) {
   const [activeTab, setActiveTab] = useState("my-classes");
@@ -24,6 +25,31 @@ const [viewingExam, setViewingExam] = useState(null);         // Lưu đề thi 
 
   const token = localStorage.getItem("access_token");
   const username = localStorage.getItem("username");
+  const [filterCategory, setFilterCategory] = useState(""); // 👈 Bộ lọc Môn học
+const [filterDifficulty, setFilterDifficulty] = useState("");
+const [avatar, setAvatar] = useState(null);
+
+  useEffect(() => {
+    // Tải ảnh đại diện riêng cho username này
+    const savedAvatar = localStorage.getItem(`avatar_${username}`);
+    if (savedAvatar) setAvatar(savedAvatar);
+  }, [username]);
+
+  const handleAvatarChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) { 
+         alert("⚠️ Ảnh quá lớn! Vui lòng chọn ảnh dưới 2MB.");
+         return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAvatar(reader.result);
+        localStorage.setItem(`avatar_${username}`, reader.result); // Lưu vào LocalStorage
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   // --- TẢI DỮ LIỆU ---
   useEffect(() => {
@@ -197,10 +223,39 @@ const [viewingExam, setViewingExam] = useState(null);         // Lưu đề thi 
     <div className="admin-container">
       {/* SIDEBAR */}
       <div className="sidebar" style={{ background: "#1e293b" }}>
-        <div className="brand" style={{ color: "#fbbf24" }}>🎓 Teacher Pro</div>
         <div style={{ padding: "20px", textAlign: "center", borderBottom: "1px solid #334155" }}>
-          <div style={{ width: "60px", height: "60px", background: "#fbbf24", borderRadius: "50%", margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "2rem" }}>👨‍🏫</div>
-          <p style={{ color: "#fff", marginTop: "10px", fontWeight: "bold" }}>{username}</p>
+            <label style={{ cursor: "pointer", position: "relative", display: "inline-block" }} title="Bấm để đổi ảnh">
+                {avatar ? (
+                    <img 
+                        src={avatar} 
+                        alt="Avatar" 
+                        style={{ 
+                            width: "80px", height: "80px", 
+                            borderRadius: "50%", objectFit: "cover", 
+                            border: "3px solid #fbbf24" // Viền màu vàng cam cho Giáo viên
+                        }} 
+                    />
+                ) : (
+                    <div style={{ 
+                        width: "80px", height: "80px", 
+                        background: "#fbbf24", 
+                        borderRadius: "50%", margin: "0 auto", 
+                        display: "flex", alignItems: "center", justifyContent: "center", 
+                        fontSize: "2.5rem" 
+                    }}>
+                        👨‍🏫
+                    </div>
+                )}
+                
+                {/* Icon máy ảnh nhỏ ở góc */}
+                <div style={{ position: "absolute", bottom: "0", right: "0", background: "white", borderRadius: "50%", padding: "4px", boxShadow: "0 2px 5px rgba(0,0,0,0.3)", fontSize: "12px" }}>
+                    📷
+                </div>
+
+                <input type="file" accept="image/*" hidden onChange={handleAvatarChange} />
+            </label>
+
+            <p style={{ color: "#fff", marginTop: "10px", fontWeight: "bold" }}>{username}</p>
         </div>
         <button className={`nav-item ${activeTab === "my-classes" ? "active" : ""}`} onClick={() => {setActiveTab("my-classes"); setSelectedClass(null);}}><IconClass /> Lớp chủ nhiệm</button>
         <button className={`nav-item ${activeTab === "questions" ? "active" : ""}`} onClick={() => setActiveTab("questions")}><IconQues /> Ngân hàng câu hỏi</button>
@@ -226,18 +281,70 @@ const [viewingExam, setViewingExam] = useState(null);         // Lưu đề thi 
           </div>
         )}
 
-        {/* TAB NGÂN HÀNG CÂU HỎI */}
+        {/* TAB NGÂN HÀNG CÂU HỎI (FIX LỖI CHẠY DỌC BẰNG MIN-WIDTH) */}
         {activeTab === 'questions' && (
             <div className="table-card">
-                <div className="table-header"><h3>Kho câu hỏi ({questions.length})</h3><button className="btn-add" onClick={() => setIsCreatingQuestion(true)}>+ Tạo câu hỏi mới</button></div>
-                <div style={{maxHeight:"65vh", overflowY:"auto"}}>
-                    <table className="modern-table">
-                        <thead><tr><th>ID</th><th>Nội dung</th><th>Chủ đề</th><th>Độ khó</th></tr></thead>
+                <div className="table-header">
+                    <h3>Kho câu hỏi ({questions.length})</h3>
+                    <button className="btn-add" onClick={() => setIsCreatingQuestion(true)}>+ Tạo câu hỏi mới</button>
+                </div>
+                
+                {/* overflow-x: auto giúp xuất hiện thanh cuộn ngang nếu bảng quá rộng */}
+                <div style={{maxHeight:"75vh", overflowY:"auto", overflowX: "auto"}}> 
+                    <table className="modern-table" style={{width: "100%", borderCollapse: "collapse", minWidth: "800px"}}> {/* Set minWidth cho cả bảng */}
+                        <thead style={{position: "sticky", top: 0, background: "#f8fafc", zIndex: 10}}>
+                            <tr>
+                                <th style={{width: "60px", textAlign: "center"}}>ID</th>
+                                {/* QUAN TRỌNG: Thêm minWidth để cột này không bao giờ bị bóp nhỏ */}
+                                <th style={{minWidth: "400px"}}>Nội dung câu hỏi</th> 
+                                <th style={{width: "150px"}}>Chủ đề</th>
+                                <th style={{width: "100px"}}>Độ khó</th>
+                            </tr>
+                        </thead>
                         <tbody>
-                            {questions.length === 0 ? <tr><td colSpan="4" style={{textAlign:"center"}}>Ngân hàng trống. Hãy tạo câu hỏi mới!</td></tr> :
-                            questions.map(q => (<tr key={q.id} onClick={() => setViewingQuestion(q)} // 👈 Thêm sự kiện click
-                                    style={{cursor: "pointer"}} 
-                                    className="hover-row"><td>#{q.id}</td><td style={{maxWidth:"400px"}}>{q.title}</td><td><span className={`badge ${q.category}`}>{q.category}</span></td><td>{q.difficulty}</td></tr>))}
+                            {questions.length === 0 ? 
+                                <tr><td colSpan="4" style={{textAlign:"center", padding: "30px", color: "#64748b"}}>Ngân hàng trống. Hãy tạo câu hỏi mới!</td></tr> 
+                            :
+                            questions.map(q => (
+                                <tr key={q.id} 
+                                    onClick={() => setViewingQuestion(q)} 
+                                    style={{cursor: "pointer", borderBottom: "1px solid #f1f5f9"}} 
+                                    className="hover-row"
+                                >
+                                    <td style={{textAlign: "center", fontWeight: "bold", color: "#64748b"}}>#{q.id}</td>
+                                    
+                                    <td style={{padding: "12px"}}>
+                                        <div style={{
+                                            fontWeight: "500", 
+                                            color: "#1e293b",
+                                            fontSize: "1rem",
+                                            lineHeight: "1.5"
+                                            // Đã bỏ các thuộc tính cắt dòng, để nó hiển thị tự nhiên
+                                        }}>
+                                            {q.title}
+                                        </div>
+                                    </td>
+                                    
+                                    <td>
+                                        <span className={`badge ${q.category}`} style={{
+                                            display: "inline-block", padding: "4px 8px", borderRadius: "4px", 
+                                            background: "#e0f2fe", color: "#0284c7", border: "1px solid #bae6fd", fontSize: "0.85rem", whiteSpace: "nowrap"
+                                        }}>
+                                            {q.category}
+                                        </span>
+                                    </td>
+                                    
+                                    <td>
+                                        <span style={{
+                                            padding: "4px 8px", borderRadius: "4px", fontSize: "0.85rem", fontWeight: "500", whiteSpace: "nowrap",
+                                            background: q.difficulty === 'easy' ? '#dcfce7' : q.difficulty === 'medium' ? '#fef9c3' : '#fee2e2',
+                                            color: q.difficulty === 'easy' ? '#166534' : q.difficulty === 'medium' ? '#854d0e' : '#991b1b'
+                                        }}>
+                                            {q.difficulty === 'easy' ? 'Dễ' : q.difficulty === 'medium' ? 'TB' : 'Khó'}
+                                        </span>
+                                    </td>
+                                </tr>
+                            ))}
                         </tbody>
                     </table>
                 </div>
@@ -291,19 +398,18 @@ const [viewingExam, setViewingExam] = useState(null);         // Lưu đề thi 
         )}
       </div>
 
-      {/* --- MODAL 1: TẠO ĐỀ THI (CÓ CHỌN CÂU HỎI & NÚT TẠO NHANH) --- */}
+      {/* --- MODAL 1: TẠO ĐỀ THI (CÓ BỘ LỌC NÂNG CẤP) --- */}
       {showCreateExam && (
           <div className="modal-overlay">
-              <div className="modal-content" >
+              <div className="modal-content" style={{minWidth: "900px"}}> {/* Tăng chiều rộng modal chút cho thoáng */}
                   <h3>📝 Soạn đề thi cho lớp {selectedClass.code}</h3>
                   <form onSubmit={handleCreateExam} style={{display: "grid", gridTemplateColumns: "300px 1fr", gap: "20px", marginTop: "15px"}}>
                       
-                      {/* Cột Trái: Thông tin đề */}
+                      {/* Cột Trái: Thông tin đề (GIỮ NGUYÊN) */}
                       <div style={{background: "#f8fafc", padding: "15px", borderRadius: "8px", height: "fit-content"}}>
                           <h4>ℹ️ Thông tin chung</h4>
                           <div className="form-group"><label>Tên bài thi:</label><input name="title" required placeholder="VD: Kiểm tra 1 tiết" /></div>
                           <div className="form-group"><label>Thời gian (phút):</label><input type="number" name="duration" defaultValue={45} /></div>
-                          {/* 👇 INPUT MỚI: SỐ LẦN LÀM BÀI */}
                           <div className="form-group">
                               <label>Số lần được làm:</label>
                               <select name="max_attempts" style={{width:"100%", padding:"10px", borderRadius:"8px", border:"1px solid #ccc"}}>
@@ -318,26 +424,90 @@ const [viewingExam, setViewingExam] = useState(null);         // Lưu đề thi 
                           <button type="button" className="action-btn" style={{width: "100%", marginTop: "10px"}} onClick={() => setShowCreateExam(false)}>Hủy bỏ</button>
                       </div>
                       
-
-                      {/* Cột Phải: Chọn câu hỏi */}
-                      <div style={{display: "flex", flexDirection: "column", height: "500px"}}>
+                      {/* Cột Phải: Chọn câu hỏi (CÓ BỘ LỌC) */}
+                      <div style={{display: "flex", flexDirection: "column", height: "600px"}}> {/* Tăng chiều cao */}
+                          
+                          {/* Header: Tiêu đề + Nút tạo mới */}
                           <div style={{display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px"}}>
-                              <h4>📚 Chọn câu hỏi</h4>
-                              {/* NÚT TẠO CÂU HỎI NGAY TRONG MODAL */}
+                              <h4>📚 Chọn câu hỏi từ Ngân hàng</h4>
                               <button type="button" className="btn-add" style={{fontSize: "0.8rem", padding: "5px 10px"}} onClick={() => setIsCreatingQuestion(true)}>+ Soạn câu hỏi mới</button>
                           </div>
-                          
+
+                          {/* 👇👇👇 KHU VỰC BỘ LỌC (FILTER) MỚI 👇👇👇 */}
+                          <div style={{display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "10px", background: "#f1f5f9", padding: "10px", borderRadius: "8px"}}>
+                                {/* Lọc theo Môn học */}
+                                <div>
+                                    <label style={{fontSize: "0.8rem", fontWeight: "bold", display: "block", marginBottom: "4px"}}>📂 Môn học / Chủ đề:</label>
+                                    <select 
+                                        value={filterCategory} 
+                                        onChange={(e) => setFilterCategory(e.target.value)}
+                                        style={{width: "100%", padding: "8px", borderRadius: "4px", border: "1px solid #ccc"}}
+                                    >
+                                        <option value="">-- Tất cả chủ đề --</option>
+                                        {/* Tự động lấy danh sách category duy nhất từ dữ liệu */}
+                                        {[...new Set(questions.map(q => q.category))].map(cat => (
+                                            <option key={cat} value={cat}>{cat}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                {/* Lọc theo Độ khó */}
+                                <div>
+                                    <label style={{fontSize: "0.8rem", fontWeight: "bold", display: "block", marginBottom: "4px"}}>📊 Độ khó:</label>
+                                    <select 
+                                        value={filterDifficulty} 
+                                        onChange={(e) => setFilterDifficulty(e.target.value)}
+                                        style={{width: "100%", padding: "8px", borderRadius: "4px", border: "1px solid #ccc"}}
+                                    >
+                                        <option value="">-- Tất cả độ khó --</option>
+                                        <option value="easy">Dễ (Easy)</option>
+                                        <option value="medium">Trung bình (Medium)</option>
+                                        <option value="hard">Khó (Hard)</option>
+                                    </select>
+                                </div>
+                          </div>
+                          {/* 👆👆👆 KẾT THÚC BỘ LỌC 👆👆👆 */}
+
+                          {/* Danh sách câu hỏi (Đã lọc) */}
                           <div className="question-list-container" style={{flex: 1, overflowY: "auto", border: "1px solid #e2e8f0", borderRadius: "6px", background: "#fff"}}>
-                              {questions.length === 0 ? <p style={{padding: "20px", textAlign: "center", color: "#999"}}>Kho câu hỏi trống.</p> : 
-                              questions.map(q => (
-                                  <div key={q.id} style={{padding: "10px", borderBottom: "1px solid #f1f5f9", display: "flex", gap: "10px", background: selectedQuestionIds.includes(q.id) ? "#fffbeb" : "transparent"}}>
-                                      <input type="checkbox" checked={selectedQuestionIds.includes(q.id)} onChange={() => handleToggleQuestion(q.id)} style={{cursor: "pointer", width: "18px", height: "18px", marginTop: "3px"}} />
-                                      <div>
-                                          <div style={{fontWeight: "500"}}>{q.title}</div>
-                                          <div style={{fontSize: "0.8rem", color: "#64748b"}}><span className={`badge ${q.category}`}>{q.category}</span> • {q.difficulty}</div>
+                              {(() => {
+                                  // Logic lọc câu hỏi tại đây
+                                  const filteredQuestions = questions.filter(q => {
+                                      const matchCategory = filterCategory ? q.category === filterCategory : true;
+                                      const matchDifficulty = filterDifficulty ? q.difficulty === filterDifficulty : true;
+                                      return matchCategory && matchDifficulty;
+                                  });
+
+                                  if (filteredQuestions.length === 0) return <p style={{padding: "20px", textAlign: "center", color: "#999"}}>Không tìm thấy câu hỏi phù hợp.</p>;
+
+                                  return filteredQuestions.map(q => (
+                                      <div key={q.id} style={{padding: "10px", borderBottom: "1px solid #f1f5f9", display: "flex", gap: "10px", background: selectedQuestionIds.includes(q.id) ? "#fffbeb" : "transparent"}}>
+                                          <input 
+                                              type="checkbox" 
+                                              checked={selectedQuestionIds.includes(q.id)} 
+                                              onChange={() => handleToggleQuestion(q.id)} 
+                                              style={{cursor: "pointer", width: "18px", height: "18px", marginTop: "3px"}} 
+                                          />
+                                          <div style={{flex: 1}}>
+                                              <div style={{fontWeight: "500", marginBottom: "4px"}}>{q.title}</div>
+                                              <div style={{fontSize: "0.8rem", display: "flex", gap: "10px"}}>
+                                                  {/* Hiển thị Badge Môn học */}
+                                                  <span className={`badge ${q.category}`} style={{padding: "2px 6px", borderRadius: "4px", background: "#e0f2fe", color: "#0284c7", border: "1px solid #bae6fd"}}>
+                                                      📂 {q.category}
+                                                  </span>
+                                                  {/* Hiển thị Badge Độ khó */}
+                                                  <span style={{
+                                                      padding: "2px 6px", borderRadius: "4px", border: "1px solid #ddd",
+                                                      background: q.difficulty === 'easy' ? '#dcfce7' : q.difficulty === 'medium' ? '#fef9c3' : '#fee2e2',
+                                                      color: q.difficulty === 'easy' ? '#166534' : q.difficulty === 'medium' ? '#854d0e' : '#991b1b'
+                                                  }}>
+                                                      📊 {q.difficulty === 'easy' ? 'Dễ' : q.difficulty === 'medium' ? 'TB' : 'Khó'}
+                                                  </span>
+                                              </div>
+                                          </div>
                                       </div>
-                                  </div>
-                              ))}
+                                  ));
+                              })()}
                           </div>
                       </div>
                   </form>

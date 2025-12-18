@@ -200,7 +200,28 @@ export default function StudentDashboard({ onLogout }) {
 
   const token = localStorage.getItem("access_token");
   const username = localStorage.getItem("username");
+const [avatar, setAvatar] = useState(null);
 
+  useEffect(() => {
+    const savedAvatar = localStorage.getItem(`avatar_${username}`);
+    if (savedAvatar) setAvatar(savedAvatar);
+  }, [username]);
+
+  const handleAvatarChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 2000000) { 
+         alert("⚠️ Ảnh quá lớn! Vui lòng chọn ảnh dưới 2MB.");
+         return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAvatar(reader.result);
+        localStorage.setItem(`avatar_${username}`, reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
   useEffect(() => {
     fetchDashboardInfo();
   }, []);
@@ -411,32 +432,54 @@ export default function StudentDashboard({ onLogout }) {
       {/* SIDEBAR */}
       <div className="sidebar" style={{ background: "#1e293b" }}>
         <div className="brand" style={{ color: "#fbbf24" }}>🎓 Student App</div>
+        
+        {/* --- 2. GIAO DIỆN AVATAR MỚI (Đã cập nhật ở đây) --- */}
         <div style={{ padding: "20px", textAlign: "center", borderBottom: "1px solid #334155" }}>
-            <div style={{ width: "60px", height: "60px", background: "#3b82f6", borderRadius: "50%", margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "2rem" }}>👨‍🎓</div>
-            <p style={{ color: "#fff", marginTop: "10px", fontWeight: "bold" }}>{username}</p>
-            {/* Hiển thị lớp */}
+            <label style={{ cursor: "pointer", position: "relative", display: "inline-block" }} title="Bấm để đổi ảnh">
+                {avatar ? (
+                    <img 
+                        src={avatar} 
+                        alt="Avatar" 
+                        style={{ width: "80px", height: "80px", borderRadius: "50%", objectFit: "cover", border: "3px solid #3b82f6" }} 
+                    />
+                ) : (
+                    <div style={{ width: "80px", height: "80px", background: "#3b82f6", borderRadius: "50%", margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "2.5rem" }}>
+                        👨‍🎓
+                    </div>
+                )}
+                
+                {/* Icon máy ảnh nhỏ */}
+                <div style={{ position: "absolute", bottom: "0", right: "0", background: "white", borderRadius: "50%", padding: "4px", boxShadow: "0 2px 5px rgba(0,0,0,0.3)", fontSize: "12px" }}>
+                    📷
+                </div>
+
+                <input type="file" accept="image/*" hidden onChange={handleAvatarChange} />
+            </label>
+
+            <p style={{ color: "#fff", marginTop: "10px", fontWeight: "bold", fontSize:"1.1rem" }}>{username}</p>
+            
+            {/* Danh sách lớp */}
             <div style={{fontSize:"0.85rem", color:"#fbbf24", marginTop:"10px", textAlign:"left", background:"rgba(255,255,255,0.1)", padding:"8px", borderRadius:"6px"}}>
-    <strong>Lớp tham gia:</strong>
-    {!classInfo || classInfo.length === 0 ? (
-        <div style={{opacity:0.7, fontStyle:"italic"}}>Chưa tham gia lớp nào</div>
-    ) : (
-        <ul style={{margin:"5px 0 0 15px", padding:0}}>
-            {classInfo.map(c => (
-                <li key={c.id} style={{marginBottom:"4px"}}>
-                    {c.code} - {c.name}
-                </li>
-            ))}
-        </ul>
-    )}
-</div>
+                <strong>Lớp tham gia:</strong>
+                {!classInfo || classInfo.length === 0 ? (
+                    <div style={{opacity:0.7, fontStyle:"italic"}}>Chưa tham gia lớp nào</div>
+                ) : (
+                    <ul style={{margin:"5px 0 0 15px", padding:0}}>
+                        {classInfo.map(c => (
+                            <li key={c.id} style={{marginBottom:"4px"}}>
+                                {c.code} - {c.name}
+                            </li>
+                        ))}
+                    </ul>
+                )}
+            </div>
         </div>
+        {/* ---------------------------------------------------- */}
         
         <button className={`nav-item ${activeTab==="assignments"?"active":""}`} onClick={()=>setActiveTab("assignments")}><IconBook /> Bài tập được giao</button>
         <button className={`nav-item ${activeTab==="practice"?"active":""}`} onClick={()=>setActiveTab("practice")}><IconLightning /> Luyện tập tự do</button>
         <button className={`nav-item ${activeTab==="history"?"active":""}`} onClick={()=>setActiveTab("history")}><IconHistory /> Lịch sử thi</button>
         <button className={`nav-item ${activeTab==="leaderboard"?"active":""}`} onClick={()=>setActiveTab("leaderboard")}><IconTrophy /> Bảng xếp hạng</button>
-        
-        
       </div>
 
       {/* MAIN CONTENT */}
@@ -510,7 +553,7 @@ export default function StudentDashboard({ onLogout }) {
           {activeTab === "history" && <div className="card"><HistoryView /></div>}
 
           {/* TAB 4: BẢNG XẾP HẠNG */}
-          {activeTab === "leaderboard" && <div className="card"><LeaderboardView /></div>}
+          {activeTab === "leaderboard" && <div className="table-card"><LeaderboardView /></div>}
       </div>
     </div>
   );

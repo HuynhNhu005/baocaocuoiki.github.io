@@ -1,0 +1,39 @@
+/* Teacher.css - Ghi đè Admin.css để mở rộng không gian */
+
+/* 1. Mở rộng vùng hiển thị chính (Main Content) */
+.main-content {
+    width: calc(100% - 260px) !important; /* Trừ đi sidebar */
+    max-width: 100% !important; /* Bỏ giới hạn chiều rộng cũ */
+    padding: 20px 40px !important; /* Tăng padding 2 bên cho thoáng */
+}
+
+/* 2. Ép Modal (Cửa sổ bật lên) phải to ra gần hết màn hình */
+.modal-content {
+    width: 95vw !important; /* Chiếm 95% chiều ngang màn hình */
+    max-width: 1600px !important; /* Tăng max-width từ 1000px lên 1600px */
+    margin: 0 auto;
+}
+
+/* 3. Xử lý bảng câu hỏi để không bị chữ chạy dọc */
+.modern-table {
+    width: 100% !important;
+    table-layout: auto !important; /* Để cột co giãn tự nhiên */
+}
+
+/* Cột Nội dung câu hỏi (thường là cột thứ 2) */
+.modern-table th:nth-child(2), 
+.modern-table td:nth-child(2) {
+    min-width: 500px !important; /* QUAN TRỌNG: Cột này không bao giờ được nhỏ hơn 500px */
+    white-space: normal !important; /* Cho phép xuống dòng tự nhiên */
+    word-break: break-word !important; /* Ngắt từ thông minh nếu từ quá dài */
+}
+
+/* 4. Căn chỉnh các cột nhỏ khác */
+.modern-table th:nth-child(1), td:nth-child(1) { width: 60px !important; text-align: center; } /* ID */
+.modern-table th:nth-child(3), td:nth-child(3) { width: 150px !important; white-space: nowrap; } /* Chủ đề */
+.modern-table th:nth-child(4), td:nth-child(4) { width: 120px !important; white-space: nowrap; } /* Độ khó */
+
+/* 5. Đảm bảo bảng có thanh cuộn ngang nếu màn hình quá bé */
+.table-card > div { 
+    overflow-x: auto !important;
+}
