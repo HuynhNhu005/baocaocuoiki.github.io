@@ -207,17 +207,50 @@ const [avatar, setAvatar] = useState(null);
     if (savedAvatar) setAvatar(savedAvatar);
   }, [username]);
 
-  const handleAvatarChange = (e) => {
+  // --- TÌM HÀM CŨ VÀ THAY THẾ BẰNG ĐOẠN NÀY ---
+  const handleAvatarChange = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      if (file.size > 2000000) { 
-         alert("⚠️ Ảnh quá lớn! Vui lòng chọn ảnh dưới 2MB.");
+      // 1. Giảm giới hạn file xuống 500KB để tránh lỗi bộ nhớ & server quá tải
+      if (file.size > 500 * 1024) { 
+         alert("⚠️ Ảnh quá lớn! Vui lòng chọn ảnh dưới 500KB.");
          return;
       }
+
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setAvatar(reader.result);
-        localStorage.setItem(`avatar_${username}`, reader.result);
+      reader.onloadend = async () => {
+        const base64 = reader.result;
+        
+        try {
+            // 2. QUAN TRỌNG: Gửi ảnh lên Server lưu vào Database
+            // (Nếu chỉ lưu LocalStorage thì đổi máy/xóa cache sẽ mất ảnh ngay)
+            const res = await fetch("http://localhost:8000/api/users/me/avatar", {
+                method: "PUT",
+                headers: { 
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}` 
+                },
+                body: JSON.stringify({ avatar_base64: base64 })
+            });
+
+            if (res.ok) {
+                // 3. Server lưu OK -> Cập nhật giao diện
+                setAvatar(base64);
+                
+                // 4. Lưu cache vào LocalStorage (Bọc try-catch để không bị crash nếu đầy bộ nhớ)
+                try {
+                    localStorage.setItem(`avatar_${username}`, base64);
+                } catch (storageError) {
+                    console.warn("Bộ nhớ trình duyệt đầy, nhưng ảnh đã được lưu an toàn trên Server.");
+                }
+                alert("✅ Đổi ảnh đại diện thành công!");
+            } else {
+                alert("❌ Lỗi Server: Không thể lưu ảnh.");
+            }
+        } catch (err) {
+            console.error(err);
+            alert("❌ Lỗi kết nối!");
+        }
       };
       reader.readAsDataURL(file);
     }

@@ -299,17 +299,19 @@ export default function AdminDashboard({ onBack }) {
             </div>
             {/* 3. Thẻ Lượt thi -> Dẫn sang trang Quản lý Đề thi mới */}
             <div 
-                className="stat-card" 
-                style={{ borderLeft: "5px solid #9333ea", cursor: "pointer", transition: "transform 0.2s" }} 
-                onClick={() => setActiveTab("exam-manager")} 
-                title="Bấm để xem danh sách đề thi"
-            >
-                <div className="stat-info">
-                    <h3>{stats.exams}</h3>
-                    <p>Đề thi (Quản lý)</p> {/* Đổi tên cho rõ nghĩa hơn */}
-                </div>
-                <small style={{color: "#9333ea", fontWeight: "bold", marginTop: "5px", display: "block"}}>Bấm để xem chi tiết ➝</small>
-            </div>
+    className="stat-card" 
+    style={{ borderLeft: "5px solid #9333ea", cursor: "pointer", transition: "transform 0.2s" }} 
+    onClick={() => setActiveTab("exam-manager")} 
+    title="Bấm để xem danh sách đề thi"
+>
+    <div className="stat-info">
+        <h3>{stats.exams}</h3>
+        <p>Đề thi (Quản lý)</p> 
+    </div>
+    
+    
+
+</div>
 
             
         
