@@ -5,3 +5,4 @@ SQLAlchemy==2.0.20
 # databases==0.5.7
 pydantic
 python-dotenv
+pydantic-settings
