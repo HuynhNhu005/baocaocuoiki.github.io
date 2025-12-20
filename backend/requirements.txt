@@ -6,3 +6,5 @@ SQLAlchemy==2.0.20
 pydantic
 python-dotenv
 pydantic-settings
+python-jose[cryptography]
+passlib[bcrypt]
