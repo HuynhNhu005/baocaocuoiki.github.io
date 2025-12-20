@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Quiz from "./components/Quiz";
 import AdminDashboard from "./components/AdminDashboard";
-import TeacherDashboard from "./components/TeacherDashboard"; // Đã import đúng
+import TeacherDashboard from "./components/TeacherDashboard";
 import StudentDashboard from "./components/StudentDashboard";
 import "./index.css";
 
@@ -26,11 +26,15 @@ export default function App() {
     const storedRole = localStorage.getItem("role");
     const storedEmail = localStorage.getItem("email");
     
+    // Lấy đường dẫn hiện tại (bỏ dấu gạch chéo ở cuối nếu có)
+    const currentPath = window.location.pathname.replace(/\/$/, "");
+
     if (!token) {
-      // Nếu chưa đăng nhập, đá về trang login
-      if (window.location.pathname !== "/login.html") {
-         alert("Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại!");
-         window.location.href = "/login.html";
+      // SỬA: Kiểm tra nếu không phải đang ở trang login thì mới đá về
+      // (Thay vì check login.html, ta check đường dẫn /login)
+      if (currentPath !== "/login") {
+         // alert("Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại!"); // Có thể bỏ alert cho đỡ phiền
+         window.location.href = "/login"; // <--- ĐÃ SỬA: Chuyển hướng về route /login
       }
     } else {
       if (storedUser) setUsername(storedUser);
@@ -52,7 +56,8 @@ export default function App() {
 
   const handleLogout = () => {
     localStorage.clear();
-    window.location.href = "/login.html";
+    // SỬA: Khi đăng xuất thì chuyển về /login thay vì login.html
+    window.location.href = "/login"; 
   };
 
   const handleAdminAction = () => {
@@ -62,7 +67,7 @@ export default function App() {
   return (
     <div className="app-container">
       
-      {/* HEADER: CHỈ HIỂN THỊ KHI KHÔNG PHẢI LÀ TEACHER (Vì Teacher có Sidebar riêng) */}
+      {/* HEADER: CHỈ HIỂN THỊ KHI KHÔNG PHẢI LÀ TEACHER */}
       {role !== 'teacher' && (
         <div style={{ 
           position: "fixed", 
@@ -112,7 +117,7 @@ export default function App() {
         </div>
       )}
 
-      {/* --- PHẦN LOGIC HIỂN THỊ CHÍNH (ĐÃ SỬA) --- */}
+      {/* --- PHẦN LOGIC HIỂN THỊ CHÍNH --- */}
       
       {/* Trường hợp 1: Admin đang bật chế độ Quản lý */}
       {role === 'admin' && showAdmin ? (
